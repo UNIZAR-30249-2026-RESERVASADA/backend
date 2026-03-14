@@ -1,0 +1,115 @@
+name: reservas-ada
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: reservas_postgres
+    environment:
+      POSTGRES_DB: reservas_db
+      POSTGRES_USER: reservas_user
+      POSTGRES_PASSWORD: reservas_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Scripts SQL que se ejecutan SOLO la primera vez que se crea el volumen
+      #- ./database/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U reservas_user -d reservas_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - reservas_net
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: reservas_rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: rabbit_user
+      RABBITMQ_DEFAULT_PASS: rabbit_pass
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - reservas_net
+
+  geo-server:
+    build:
+      context: ./geo-server
+      dockerfile: Dockerfile
+    container_name: reservas_pygeoapi
+    ports:
+      - "5000:5000"
+    environment:
+      PYGEOAPI_CONFIG: /app/pygeoapi-config.yml
+      PYGEOAPI_OPENAPI: /app/openapi.yml
+    volumes:
+    - ./data/espacios_geojson:/data/espacios_geojson:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - reservas_net  
+
+  app-server:
+    build:
+      context: ./app-server
+      dockerfile: Dockerfile
+    container_name: reservas_app_server
+    environment:
+      APP_SERVER_PORT: "4000"
+      # DB (para cuando metas Sequelize)
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: reservas_db
+      DB_USER: reservas_user
+      DB_PASSWORD: reservas_pass
+      # Rabbit (para sobresaliente)
+      RABBITMQ_URL: amqp://rabbit_user:rabbit_pass@rabbitmq:5672
+      REQUEST_QUEUE: reservas.requests
+      RESPONSE_QUEUE: reservas.responses
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./data/espacios_geojson:/data/espacios_geojson:ro
+    networks:
+      - reservas_net
+
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    container_name: reservas_gateway
+    environment:
+      GATEWAY_PORT: "3000"
+      # Rabbit (para sobresaliente)
+      RABBITMQ_URL: amqp://rabbit_user:rabbit_pass@rabbitmq:5672
+      REQUEST_QUEUE: reservas.requests
+      RESPONSE_QUEUE: reservas.responses
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      app-server:
+        condition: service_started
+    ports:
+      - "3000:3000"
+    networks:
+      - reservas_net
+
+volumes:
+  pgdata:
+
+networks:
+  reservas_net:
+    driver: bridge

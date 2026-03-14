@@ -1,0 +1,72 @@
+server:
+  bind:
+    host: 0.0.0.0
+    port: 5000
+  url: http://localhost:5000
+  cors: true
+  pretty_print: true
+  map:
+    url: https://tile.openstreetmap.org/{z}/{x}/{y}.png
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  limits:
+    max_limit: 10000
+    default_limit: 10
+    default_items: 20
+  language: es-ES
+  languages:
+    - es-ES
+    - en-US
+
+metadata:
+  identification:
+    title: ByronSpace Geo API
+    description: API geográfica para el sistema de reservas del edificio Ada Byron
+    keywords:
+      - reservas
+      - unizar
+      - postgis
+    terms_of_service: https://example.org/terms
+    url: http://localhost:5000
+  license:
+    name: CC BY 4.0
+    url: https://creativecommons.org/licenses/by/4.0/
+  provider:
+    name: Universidad de Zaragoza
+    url: https://www.unizar.es
+  contact:
+    name: Equipo ByronSpace
+    email: soporte@byronspace.local
+
+resources:
+  espacios:
+    type: collection
+    title: Espacios Ada Byron
+    description: Espacios reservables del edificio Ada Byron
+    keywords:
+      - espacios
+      - reservas
+      - ada-byron
+    extents:
+      spatial:
+        bbox:
+          - [-1.10, 41.50, -0.85, 41.75]
+      temporal:
+        interval:
+          - [null, null]
+    license: CC-BY-4.0
+    providers:
+      - type: feature
+        name: PostgreSQL
+        data:
+          host: postgres
+          port: 5432
+          dbname: reservas_db
+          user: reservas_user
+          password: reservas_pass
+        id_field: gid
+        table: espacios
+        geom_field: geom
+
+logging:
+  level: INFO
+  logfile: /tmp/pygeoapi.log

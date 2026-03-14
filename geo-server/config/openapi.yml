@@ -1,0 +1,14 @@
+openapi: 3.0.2
+info:
+  title: ByronSpace Geo API
+  version: "1.0.0"
+  description: API geográfica del sistema de reservas Ada Byron
+servers:
+  - url: http://localhost:5000
+paths:
+  /:
+    get:
+      summary: Root endpoint
+      responses:
+        "200":
+          description: OK
