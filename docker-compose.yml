@@ -13,7 +13,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
       # Scripts SQL que se ejecutan SOLO la primera vez que se crea el volumen
-      - ./database/init:/docker-entrypoint-initdb.d:ro
+      #- ./database/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U reservas_user -d reservas_db"]
       interval: 5s
@@ -49,6 +49,8 @@ services:
     environment:
       PYGEOAPI_CONFIG: /app/pygeoapi-config.yml
       PYGEOAPI_OPENAPI: /app/openapi.yml
+    volumes:
+    - ./data/espacios_geojson:/data/espacios_geojson:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -79,6 +81,8 @@ services:
         condition: service_healthy
     ports:
       - "4000:4000"
+    volumes:
+      - ./data/espacios_geojson:/data/espacios_geojson:ro
     networks:
       - reservas_net
 

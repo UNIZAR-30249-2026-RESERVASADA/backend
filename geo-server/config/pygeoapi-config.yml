@@ -5,7 +5,13 @@ server:
   url: http://localhost:5000
   cors: true
   pretty_print: true
-
+  map:
+    url: https://tile.openstreetmap.org/{z}/{x}/{y}.png
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  limits:
+    max_limit: 10000
+    default_limit: 10
+    default_items: 20
   language: es-ES
   languages:
     - es-ES
@@ -31,7 +37,35 @@ metadata:
     name: Equipo ByronSpace
     email: soporte@byronspace.local
 
-resources: {}
+resources:
+  espacios:
+    type: collection
+    title: Espacios Ada Byron
+    description: Espacios reservables del edificio Ada Byron
+    keywords:
+      - espacios
+      - reservas
+      - ada-byron
+    extents:
+      spatial:
+        bbox:
+          - [-1.10, 41.50, -0.85, 41.75]
+      temporal:
+        interval:
+          - [null, null]
+    license: CC-BY-4.0
+    providers:
+      - type: feature
+        name: PostgreSQL
+        data:
+          host: postgres
+          port: 5432
+          dbname: reservas_db
+          user: reservas_user
+          password: reservas_pass
+        id_field: gid
+        table: espacios
+        geom_field: geom
 
 logging:
   level: INFO
