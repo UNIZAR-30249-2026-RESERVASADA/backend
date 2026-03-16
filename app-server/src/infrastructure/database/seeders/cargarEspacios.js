@@ -27,8 +27,8 @@ async function cargarEspacios(sequelize) {
 
       try {
         await sequelize.query(`
-          INSERT INTO espacios (gid, id_espacio, nombre, uso, edificio, planta, superficie, reservable, geom)
-          VALUES (:gid, :id_espacio, :nombre, :uso, :edificio, :planta, :superficie, false,
+          INSERT INTO espacios (gid, id_espacio, nombre, uso, categoria, edificio, planta, superficie, reservable, aforo, geom)
+          VALUES (:gid, :id_espacio, :nombre, :uso, :categoria, :edificio, :planta, :superficie, false, :aforo,
                   ST_SetSRID(ST_GeomFromGeoJSON(:geom), 4326))
           ON CONFLICT (gid) DO NOTHING
         `, {
@@ -37,9 +37,11 @@ async function cargarEspacios(sequelize) {
             id_espacio: props.ID_ESPACIO || null,
             nombre: props.Nombre || props.NOMBRE || null,
             uso: props.USO || null,
+            categoria: props.USO || null,  // INICIALMENTE IGUAL A USO
             edificio: props.EDIFICIO || null,
             planta: props.Altura || props.PLANTA || null,
             superficie: props.SUPERFICIE || null,
+            aforo: null,
             geom: JSON.stringify(feature.geometry)
           }
         });

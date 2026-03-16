@@ -12,9 +12,14 @@ module.exports = (sequelize) => {
     },
     nombre: {
       type: DataTypes.STRING,
-    },
+    },    
     uso: {
       type: DataTypes.STRING,
+    },
+    categoria: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: 'Categoría modificable (inicialmente igual a uso)'
     },
     edificio: {
       type: DataTypes.STRING,
