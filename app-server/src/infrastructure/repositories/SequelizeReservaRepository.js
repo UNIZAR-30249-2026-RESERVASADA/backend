@@ -6,17 +6,20 @@ class SequelizeReservaRepository extends ReservaRepository {
     super();
     this.ReservaModel = ReservaModel;
   }
-
   async save(reserva) {
+    console.log("SequelizeReservaRepository.save() recibió:", reserva);
     const creada = await this.ReservaModel.create({
       espacioId: reserva.espacioId,
       usuarioId: reserva.usuarioId,
       fecha: reserva.fecha,
       horaInicio: reserva.horaInicio,
-      horaFin: reserva.horaFin,
+      duracion: reserva.duracion,
+      numPersonas: reserva.numPersonas,
+      tipoUso: reserva.tipoUso,
+      descripcion: reserva.descripcion,
       estado: reserva.estado,
     });
-
+    console.log("Reserva guardada en BD:", creada.toJSON());
     return creada;
   }
 

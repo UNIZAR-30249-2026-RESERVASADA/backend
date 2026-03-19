@@ -1,5 +1,5 @@
 function validateCreateReservaDto(body) {
-  const { espacioId, usuarioId, fecha, horaInicio, horaFin } = body;
+  const { espacioId, usuarioId, fecha, horaInicio, duracion, numPersonas, tipoUso, descripcion } = body;
 
   if (!espacioId) {
     throw new Error("El campo espacioId es obligatorio");
@@ -17,16 +17,19 @@ function validateCreateReservaDto(body) {
     throw new Error("El campo horaInicio es obligatorio");
   }
 
-  if (!horaFin) {
-    throw new Error("El campo horaFin es obligatorio");
+  if (!duracion) {
+    throw new Error("El campo duracion es obligatorio");
   }
 
   return {
-    espacioId: String(espacioId).trim(),
-    usuarioId: String(usuarioId).trim(),
+    espacioId: Number(espacioId),
+    usuarioId: Number(usuarioId),
     fecha: String(fecha).trim(),
     horaInicio: String(horaInicio).trim(),
-    horaFin: String(horaFin).trim(),
+    duracion: Number(duracion),
+    numPersonas: numPersonas ? Number(numPersonas) : null,
+    tipoUso: tipoUso ? String(tipoUso).trim() : null,
+    descripcion: descripcion ? String(descripcion).trim() : null,
   };
 }
 

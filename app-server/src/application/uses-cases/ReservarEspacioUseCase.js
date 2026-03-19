@@ -3,9 +3,7 @@ class ReservarEspacioUseCase {
     this.espacioRepository = espacioRepository;
     this.reservaRepository = reservaRepository;
     this.ReservaEntity = ReservaEntity;
-  }
-
-  async execute({ espacioId, usuarioId, fecha, horaInicio, horaFin }) {
+  }  async execute({ espacioId, usuarioId, fecha, horaInicio, duracion, numPersonas, tipoUso, descripcion }) {
     if (!espacioId) {
       throw new Error("El id del espacio es obligatorio");
     }
@@ -14,12 +12,14 @@ class ReservarEspacioUseCase {
       throw new Error("El id del usuario es obligatorio");
     }
 
-    if (!fecha || !horaInicio || !horaFin) {
-      throw new Error("Fecha, hora de inicio y hora de fin son obligatorias");
+    if (!fecha || !horaInicio || !duracion) {
+      throw new Error("Fecha, hora de inicio y duración son obligatorias");
     }
 
-    if (horaInicio >= horaFin) {
-      throw new Error("La hora de inicio debe ser anterior a la hora de fin");
+    // 1. Verificar que el usuario existe y obtener su rol
+    const usuario = await this.usuarioRepository.findById(usuarioId);
+    if (!usuario) {
+      throw new Error("El usuario no existe");
     }
 
     const espacio = await this.espacioRepository.findById(espacioId);
@@ -30,17 +30,11 @@ class ReservarEspacioUseCase {
 
     if (!espacio.reservable) {
       throw new Error("El espacio no es reservable");
-    }
-
-    const solapadas = await this.reservaRepository.findSolapadas(
-      espacioId,
-      fecha,
-      horaInicio,
-      horaFin
-    );
-
-    if (solapadas.length > 0) {
-      throw new Error("Ya existe una reserva para ese espacio en esa franja horaria");
+    } 
+    
+    // 4. ⭐ VALIDAR RESTRICCIÓN DE ROL (REGLA DE NEGOCIO)
+    if (!this.ReservaPolicy.puedeReservar(usuario.rol, espacio.categoria, usuario.departamentoId, espacio.departamentoId)) {
+      throw new Error(`Tu rol (${usuario.rol}) no permite reservar espacios de tipo ${espacio.categoria}`);
     }
 
     const reserva = new this.ReservaEntity({
@@ -48,7 +42,10 @@ class ReservarEspacioUseCase {
       usuarioId,
       fecha,
       horaInicio,
-      horaFin,
+      duracion,
+      numPersonas,
+      tipoUso,
+      descripcion,
       estado: "aceptada",
     });
 

@@ -1,16 +1,20 @@
 class Espacio {
   constructor({
-    idEspacio,
+    gid,             // PK en la tabla
+    idEspacio,       // id_espacio
     nombre,
     uso,
     categoria,
-    edificio,
+    edificio,        // nombre edificio (campo string)
     planta,
     superficie,
     reservable,
     aforo,
     geom,
+    departamentoId = null,
+    edificioId = null,
   }) {
+    this.gid = gid;
     this.idEspacio = idEspacio;
     this.nombre = nombre;
     this.uso = uso;
@@ -21,6 +25,9 @@ class Espacio {
     this.reservable = reservable;
     this.aforo = aforo;
     this.geom = geom;
+
+    this.departamentoId = departamentoId;
+    this.edificioId = edificioId;
   }
 }
 

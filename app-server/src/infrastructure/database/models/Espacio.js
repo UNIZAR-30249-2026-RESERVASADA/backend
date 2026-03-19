@@ -37,6 +37,27 @@ module.exports = (sequelize) => {
     aforo: {
       type: DataTypes.INTEGER,
     },
+    asignadoAEina: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false
+    },
+    departamentoId: {
+      type: DataTypes.BIGINT,
+      allowNull: true,
+      references: {
+        model: "departamentos",
+        key: "id",
+      },
+    },
+    edificioId: {
+      type: DataTypes.BIGINT,
+      allowNull: true,
+      references: {
+        model: "edificios",
+        key: "id",
+      },
+    },
     geom: {
       type: DataTypes.GEOMETRY('MULTIPOLYGON', 4326),
     }

@@ -2,13 +2,8 @@ class SequelizeEspacioRepository {
   constructor({ EspacioModel }) {
     this.EspacioModel = EspacioModel;
   }
-
   async findById(id) {
-    return await this.EspacioModel.findOne({
-      where: {
-        id_espacio: id,
-      },
-    });
+    return await this.EspacioModel.findByPk(id);
   }
 
   async findAll(filters = {}) {
