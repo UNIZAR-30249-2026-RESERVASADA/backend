@@ -19,21 +19,29 @@ class ReservaPolicy {
     // Estudiante: Solo Sala común
     if (rol === "estudiante") {
       return categoria.includes("sala común");
-    }
-
-    // Investigador contratado: Aula, Seminario, Sala común, Laboratorio (solo su dpto)
+    }    
+      // Investigador contratado: Aula, Seminario, Sala común, Laboratorio (solo su dpto), Despacho (solo su dpto)
     if (rol === "investigador_contratado") {
-      if (categoria.includes("laboratorio")) {
+      if (categoria.includes("laboratorio") || categoria.includes("despacho")) {
         // Solo puede si es de su mismo dpto
-        return deptUsuario && deptEspacio && deptUsuario === deptEspacio;
+        // Si el espacio tiene deptEspacio = null, es de EINA → no puede reservar
+        if (!deptEspacio) return false;
+        return deptUsuario && String(deptUsuario) === String(deptEspacio);
       }
       return categoria.includes("aula") || categoria.includes("seminario") || categoria.includes("sala común");
-    }
-
-    // Docente-Investigador: Aula, Seminario, Sala común, Laboratorio (solo su dpto)
+    }    // Docente-Investigador: Aula, Seminario, Sala común, Laboratorio (solo su dpto), Despacho (solo su dpto)
     if (rol === "docente_investigador") {
-      if (categoria.includes("laboratorio")) {
-        return deptUsuario && deptEspacio && deptUsuario === deptEspacio;
+      if (categoria.includes("laboratorio") || categoria.includes("despacho")) {
+        // Solo puede si es de su mismo dpto
+        // Si el espacio tiene deptEspacio = null, es de EINA → no puede reservar
+        console.log(`ReservaPolicy DOCENTE: validando ${categoria}`, {
+          deptUsuario,
+          deptEspacio,
+          tieneDepto: !!deptEspacio,
+          coincide: String(deptUsuario) === String(deptEspacio),
+        });
+        if (!deptEspacio) return false;
+        return deptUsuario && String(deptUsuario) === String(deptEspacio);
       }
       return categoria.includes("aula") || categoria.includes("seminario") || categoria.includes("sala común");
     }
@@ -41,7 +49,9 @@ class ReservaPolicy {
     // Técnico de Lab: Solo Laboratorio de su dpto
     if (rol === "tecnico_laboratorio") {
       if (categoria.includes("laboratorio")) {
-        return deptUsuario && deptEspacio && deptUsuario === deptEspacio;
+        // Si el laboratorio tiene deptEspacio = null, es de EINA → no puede reservar
+        if (!deptEspacio) return false;
+        return deptUsuario && String(deptUsuario) === String(deptEspacio);
       }
       return false;
     }
@@ -49,12 +59,13 @@ class ReservaPolicy {
     // Conserje: Aula, Seminario, Sala común
     if (rol === "conserje") {
       return categoria.includes("aula") || categoria.includes("seminario") || categoria.includes("sala común");
-    }
-
-    // Investigador Visitante: Aula, Seminario, Sala común, Laboratorio (solo su dpto)
+    }    
+      // Investigador Visitante: Aula, Seminario, Sala común, Laboratorio (solo su dpto)
     if (rol === "investigador_visitante") {
       if (categoria.includes("laboratorio")) {
-        return deptUsuario && deptEspacio && deptUsuario === deptEspacio;
+        // Si el laboratorio tiene deptEspacio = null, es de EINA → no puede reservar
+        if (!deptEspacio) return false;
+        return deptUsuario && String(deptUsuario) === String(deptEspacio);
       }
       return categoria.includes("aula") || categoria.includes("seminario") || categoria.includes("sala común");
     }
@@ -69,12 +80,11 @@ class ReservaPolicy {
 
   /**
    * Obtiene el mensaje de restricción para un rol
-   */
-  static obtenerRestriccionesTexto(rolUsuario) {
+   */  static obtenerRestriccionesTexto(rolUsuario) {
     const restricciones = {
       estudiante: "Puedes reservar: Solo Salas comunes",
-      investigador_contratado: "Puedes reservar: Aulas, Salas comunes, Seminarios, Laboratorios (solo de tu dpto)",
-      docente_investigador: "Puedes reservar: Aulas, Salas comunes, Seminarios, Laboratorios (solo de tu dpto)",
+      investigador_contratado: "Puedes reservar: Aulas, Salas comunes, Seminarios, Laboratorios (solo de tu dpto), Despachos (solo de tu dpto)",
+      docente_investigador: "Puedes reservar: Aulas, Salas comunes, Seminarios, Laboratorios (solo de tu dpto), Despachos (solo de tu dpto)",
       conserje: "Puedes reservar: Aulas, Seminarios, Salas comunes",
       tecnico_laboratorio: "Puedes reservar: Laboratorios (solo de tu dpto)",
       investigador_visitante: "Puedes reservar: Aulas, Salas comunes, Seminarios, Laboratorios (solo de tu dpto)",

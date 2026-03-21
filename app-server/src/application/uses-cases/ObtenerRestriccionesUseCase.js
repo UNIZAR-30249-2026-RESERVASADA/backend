@@ -6,9 +6,10 @@ class ObtenerRestriccionesUseCase {
       throw new Error("El rol del usuario es obligatorio");
     }
 
+    // Solo retorna el mensaje descriptivo
+    // La validación real está en ReservaPolicy al intentar reservar
     return {
       rol: rolUsuario,
-      puedereservar: ReservaPolicy.restriccionesporRol[rolUsuario.toLowerCase()] || [],
       mensaje: ReservaPolicy.obtenerRestriccionesTexto(rolUsuario),
     };
   }

@@ -31,11 +31,13 @@ function normalizarCategoriaInicial(uso) {
 function esReservableInicialmente(categoria) {
   const valor = normalizarTexto(categoria);
 
+  // Según RFO3: Los despachos SÍ son reservables (por gerentes, investigadores, docentes)
   return (
     valor === "aula" ||
     valor === "seminario" ||
     valor === "laboratorio" ||
-    valor === "sala comun"
+    valor === "sala comun" ||
+    valor === "despacho"
   );
 }
 
