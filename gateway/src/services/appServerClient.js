@@ -4,5 +4,4 @@ module.exports = {
   crearReserva: messagingClient.crearReserva,
   obtenerMetadatosEspacios: messagingClient.obtenerMetadatosEspacios,
   login: messagingClient.login,
-  obtenerRestricciones: messagingClient.obtenerRestricciones,
 };

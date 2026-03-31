@@ -1,12 +1,4 @@
 class ReservaPolicy {
-  /**
-   * Verifica si un usuario puede reservar un espacio según su rol y departamento
-   * @param {string} rolUsuario - rol del usuario
-   * @param {string} categoriaEspacio - categoría del espacio
-   * @param {number} deptUsuario - departamento del usuario (null si no aplica)
-   * @param {number} deptEspacio - departamento del espacio (null si es común)
-   * @returns {boolean} true si puede reservar, false si no
-   */
   static puedeReservar(rolUsuario, categoriaEspacio, deptUsuario = null, deptEspacio = null) {
     if (!rolUsuario || !categoriaEspacio) {
       return false;
@@ -15,62 +7,62 @@ class ReservaPolicy {
     const rol = rolUsuario.toLowerCase();
     const categoria = categoriaEspacio.toLowerCase();
 
-    // Según la tabla de requisitos:
-    // Estudiante: Solo Sala común
     if (rol === "estudiante") {
       return categoria.includes("sala común");
-    }    
-      // Investigador contratado: Aula, Seminario, Sala común, Laboratorio (solo su dpto), Despacho (solo su dpto)
-    if (rol === "investigador_contratado") {
-      if (categoria.includes("laboratorio") || categoria.includes("despacho")) {
-        // Solo puede si es de su mismo dpto
-        // Si el espacio tiene deptEspacio = null, es de EINA → no puede reservar
-        if (!deptEspacio) return false;
-        return deptUsuario && String(deptUsuario) === String(deptEspacio);
-      }
-      return categoria.includes("aula") || categoria.includes("seminario") || categoria.includes("sala común");
-    }    // Docente-Investigador: Aula, Seminario, Sala común, Laboratorio (solo su dpto), Despacho (solo su dpto)
-    if (rol === "docente_investigador") {
-      if (categoria.includes("laboratorio") || categoria.includes("despacho")) {
-        // Solo puede si es de su mismo dpto
-        // Si el espacio tiene deptEspacio = null, es de EINA → no puede reservar
-        console.log(`ReservaPolicy DOCENTE: validando ${categoria}`, {
-          deptUsuario,
-          deptEspacio,
-          tieneDepto: !!deptEspacio,
-          coincide: String(deptUsuario) === String(deptEspacio),
-        });
-        if (!deptEspacio) return false;
-        return deptUsuario && String(deptUsuario) === String(deptEspacio);
-      }
-      return categoria.includes("aula") || categoria.includes("seminario") || categoria.includes("sala común");
     }
 
-    // Técnico de Lab: Solo Laboratorio de su dpto
+    if (rol === "investigador_contratado") {
+      if (categoria.includes("laboratorio") || categoria.includes("despacho")) {
+        if (!deptEspacio) return false;
+        return deptUsuario && String(deptUsuario) === String(deptEspacio);
+      }
+      return (
+        categoria.includes("aula") ||
+        categoria.includes("seminario") ||
+        categoria.includes("sala común")
+      );
+    }
+
+    if (rol === "docente_investigador") {
+      if (categoria.includes("laboratorio") || categoria.includes("despacho")) {
+        if (!deptEspacio) return false;
+        return deptUsuario && String(deptUsuario) === String(deptEspacio);
+      }
+      return (
+        categoria.includes("aula") ||
+        categoria.includes("seminario") ||
+        categoria.includes("sala común")
+      );
+    }
+
     if (rol === "tecnico_laboratorio") {
       if (categoria.includes("laboratorio")) {
-        // Si el laboratorio tiene deptEspacio = null, es de EINA → no puede reservar
         if (!deptEspacio) return false;
         return deptUsuario && String(deptUsuario) === String(deptEspacio);
       }
       return false;
     }
 
-    // Conserje: Aula, Seminario, Sala común
     if (rol === "conserje") {
-      return categoria.includes("aula") || categoria.includes("seminario") || categoria.includes("sala común");
-    }    
-      // Investigador Visitante: Aula, Seminario, Sala común, Laboratorio (solo su dpto)
+      return (
+        categoria.includes("aula") ||
+        categoria.includes("seminario") ||
+        categoria.includes("sala común")
+      );
+    }
+
     if (rol === "investigador_visitante") {
       if (categoria.includes("laboratorio")) {
-        // Si el laboratorio tiene deptEspacio = null, es de EINA → no puede reservar
         if (!deptEspacio) return false;
         return deptUsuario && String(deptUsuario) === String(deptEspacio);
       }
-      return categoria.includes("aula") || categoria.includes("seminario") || categoria.includes("sala común");
+      return (
+        categoria.includes("aula") ||
+        categoria.includes("seminario") ||
+        categoria.includes("sala común")
+      );
     }
 
-    // Gerente: Todo
     if (rol === "gerente") {
       return true;
     }
@@ -78,20 +70,90 @@ class ReservaPolicy {
     return false;
   }
 
-  /**
-   * Obtiene el mensaje de restricción para un rol
-   */  static obtenerRestriccionesTexto(rolUsuario) {
-    const restricciones = {
-      estudiante: "Puedes reservar: Solo Salas comunes",
-      investigador_contratado: "Puedes reservar: Aulas, Salas comunes, Seminarios, Laboratorios (solo de tu dpto), Despachos (solo de tu dpto)",
-      docente_investigador: "Puedes reservar: Aulas, Salas comunes, Seminarios, Laboratorios (solo de tu dpto), Despachos (solo de tu dpto)",
-      conserje: "Puedes reservar: Aulas, Seminarios, Salas comunes",
-      tecnico_laboratorio: "Puedes reservar: Laboratorios (solo de tu dpto)",
-      investigador_visitante: "Puedes reservar: Aulas, Salas comunes, Seminarios, Laboratorios (solo de tu dpto)",
-      gerente: "Puedes reservar cualquier espacio",
+  static obtenerRestriccionesUI(rolUsuario) {
+    const rol = (rolUsuario || "").toLowerCase();
+
+    const mapa = {
+      estudiante: {
+        rol: "estudiante",
+        mensaje: "Puedes reservar: Solo Salas comunes",
+        categoriasPermitidas: ["sala común"],
+        categoriasConRestriccionDepartamento: [],
+        puedeReservarTodo: false,
+      },
+      investigador_contratado: {
+        rol: "investigador_contratado",
+        mensaje:
+          "Puedes reservar: Aulas, Salas comunes, Seminarios, Laboratorios (solo de tu dpto), Despachos (solo de tu dpto)",
+        categoriasPermitidas: [
+          "aula",
+          "seminario",
+          "sala común",
+          "laboratorio",
+          "despacho",
+        ],
+        categoriasConRestriccionDepartamento: ["laboratorio", "despacho"],
+        puedeReservarTodo: false,
+      },
+      docente_investigador: {
+        rol: "docente_investigador",
+        mensaje:
+          "Puedes reservar: Aulas, Salas comunes, Seminarios, Laboratorios (solo de tu dpto), Despachos (solo de tu dpto)",
+        categoriasPermitidas: [
+          "aula",
+          "seminario",
+          "sala común",
+          "laboratorio",
+          "despacho",
+        ],
+        categoriasConRestriccionDepartamento: ["laboratorio", "despacho"],
+        puedeReservarTodo: false,
+      },
+      tecnico_laboratorio: {
+        rol: "tecnico_laboratorio",
+        mensaje: "Puedes reservar: Laboratorios (solo de tu dpto)",
+        categoriasPermitidas: ["laboratorio"],
+        categoriasConRestriccionDepartamento: ["laboratorio"],
+        puedeReservarTodo: false,
+      },
+      conserje: {
+        rol: "conserje",
+        mensaje: "Puedes reservar: Aulas, Seminarios, Salas comunes",
+        categoriasPermitidas: ["aula", "seminario", "sala común"],
+        categoriasConRestriccionDepartamento: [],
+        puedeReservarTodo: false,
+      },
+      investigador_visitante: {
+        rol: "investigador_visitante",
+        mensaje:
+          "Puedes reservar: Aulas, Salas comunes, Seminarios, Laboratorios (solo de tu dpto)",
+        categoriasPermitidas: [
+          "aula",
+          "seminario",
+          "sala común",
+          "laboratorio",
+        ],
+        categoriasConRestriccionDepartamento: ["laboratorio"],
+        puedeReservarTodo: false,
+      },
+      gerente: {
+        rol: "gerente",
+        mensaje: "Puedes reservar cualquier espacio",
+        categoriasPermitidas: [],
+        categoriasConRestriccionDepartamento: [],
+        puedeReservarTodo: true,
+      },
     };
 
-    return restricciones[rolUsuario] || "Sin permisos definidos";
+    return (
+      mapa[rol] || {
+        rol,
+        mensaje: "Sin permisos definidos",
+        categoriasPermitidas: [],
+        categoriasConRestriccionDepartamento: [],
+        puedeReservarTodo: false,
+      }
+    );
   }
 }
 

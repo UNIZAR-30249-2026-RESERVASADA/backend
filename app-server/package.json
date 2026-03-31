@@ -4,7 +4,9 @@
   "main": "src/main.js",
   "type": "commonjs",
   "scripts": {
-    "start": "node src/main.js"
+    "start": "node src/main.js",
+    "test": "jest",
+    "test:coverage": "jest --coverage"
   },
   "dependencies": {
     "amqplib": "^0.10.9",
@@ -13,5 +15,22 @@
     "pg": "^8.11.0",
     "pg-hstore": "^2.3.4",
     "sequelize": "^6.32.1"
+  },
+  "devDependencies": {
+    "jest": "^30.3.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "collectCoverageFrom": [
+      "src/application/**/*.js",
+      "src/domain/**/*.js",
+      "!src/main.js",
+      "!src/domain/repositories/**/*.js",
+      "!src/domain/exceptions/**/*.js",
+      "!src/infrastructure/database/**/*.js",
+      "!src/infrastructure/repositories/**/*.js",
+      "!src/http/**/*.js",
+      "!src/messaging/**/*.js"
+    ]
   }
 }

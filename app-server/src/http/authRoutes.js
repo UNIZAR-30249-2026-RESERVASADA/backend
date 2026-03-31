@@ -17,17 +17,4 @@ module.exports = ({ loginUseCase, obtenerRestriccionesUseCase }) => (app) => {
       next(err);
     }
   });
-
-  // ← NUEVO: endpoint para obtener restricciones de un rol
-  app.get("/auth/restricciones/:rol", async (req, res, next) => {
-    try {
-      const { rol } = req.params;
-
-      const restricciones = await obtenerRestriccionesUseCase.execute({ rolUsuario: rol });
-
-      res.status(200).json(restricciones);
-    } catch (err) {
-      next(err);
-    }
-  });
 };

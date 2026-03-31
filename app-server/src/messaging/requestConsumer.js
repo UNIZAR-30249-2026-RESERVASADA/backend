@@ -1,10 +1,10 @@
 const { getChannel } = require("./rabbitmq");
+const ReservaPolicy = require("../domain/policies/ReservaPolicy");
 
 async function startRequestConsumer({
   reservarEspacioUseCase,
   getEspaciosMetadatosUseCase,
   loginUseCase,
-  obtenerRestriccionesUseCase,
 }) {
   const channel = await getChannel();
   const requestQueue = process.env.REQUEST_QUEUE || "reservas.requests";
@@ -23,7 +23,7 @@ async function startRequestConsumer({
       const content = JSON.parse(msg.content.toString());
       const { action, payload } = content;
 
-      // 🔥 LOGIN
+      // LOGIN
       if (action === "login") {
         const { email, password } = payload;
 
@@ -33,28 +33,23 @@ async function startRequestConsumer({
 
         const usuario = await loginUseCase.execute({ email, password });
 
-        response = { ok: true, data: usuario };
+        response = { 
+          ok: true, 
+          data: {
+            usuario,
+            restriccionesReserva : ReservaPolicy.obtenerRestriccionesUI(usuario.rol)
+          }
+        };
       }
 
-      // 🔥 RESTRICCIONES
-      else if (action === "obtenerRestricciones") {
-        const { rol } = payload;
-
-        const restricciones = await obtenerRestriccionesUseCase.execute({
-          rolUsuario: rol,
-        });
-
-        response = { ok: true, data: restricciones };
-      }
-
-      // 🔥 METADATOS
+      // METADATOS
       else if (action === "obtenerMetadatosEspacios") {
         const data = await getEspaciosMetadatosUseCase.execute();
 
         response = { ok: true, data };
       }
 
-      // 🔥 RESERVA
+      // RESERVA
       else if (action === "crearReserva") {
         const {
           espacioId,
@@ -83,7 +78,7 @@ async function startRequestConsumer({
         response = { ok: true, data: resultado };
       }
 
-      // ❌ acción desconocida
+      // acción desconocida
       else {
         response = {
           ok: false,
@@ -97,7 +92,7 @@ async function startRequestConsumer({
       };
     }
 
-    // 🔁 responder al gateway
+    // responder al gateway
     if (replyTo) {
       channel.sendToQueue(
         replyTo,

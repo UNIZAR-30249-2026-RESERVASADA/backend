@@ -10,19 +10,18 @@ const SequelizeUsuarioRepository = require("./infrastructure/repositories/Sequel
 const GetEspaciosMetadatosUseCase = require("./application/uses-cases/GetEspaciosMetadatosUseCase");
 const ReservarEspacioUseCase = require("./application/uses-cases/ReservarEspacioUseCase");
 const LoginUseCase = require("./application/uses-cases/LoginUseCase");
-const ObtenerRestriccionesUseCase = require("./application/uses-cases/ObtenerRestriccionesUseCase");
 
 const ReservaEntity = require("./domain/entities/Reserva");
 const ReservaPolicy = require("./domain/policies/ReservaPolicy");
 
 async function main() {
-  // 🔹 1. BD
+  // 1. BD
   await conectar();
 
-  // 🔹 2. RabbitMQ
+  // 2. RabbitMQ
   await connectRabbitMQ();
 
-  // 🔹 3. Repositorios
+  // 3. Repositorios
   const espacioRepository = new SequelizeEspacioRepository({
     EspacioModel: Espacio,
   });
@@ -33,7 +32,7 @@ async function main() {
 
   const usuarioRepository = new SequelizeUsuarioRepository(Usuario);
 
-  // 🔹 4. Use Cases
+  // 4. Use Cases
   const getEspaciosMetadatosUseCase = new GetEspaciosMetadatosUseCase({
     espacioRepository,
   });
@@ -50,14 +49,11 @@ async function main() {
     usuarioRepository,
   });
 
-  const obtenerRestriccionesUseCase = new ObtenerRestriccionesUseCase();
-
-  // 🔹 5. Consumer (🔥 AQUÍ ESTÁ LA MAGIA)
+  // 5. Consumer 
   await startRequestConsumer({
     reservarEspacioUseCase,
     getEspaciosMetadatosUseCase,
     loginUseCase,
-    obtenerRestriccionesUseCase,
   });
 
   console.log("🚀 App-server listo (RabbitMQ + DB) y esperando mensajes...");

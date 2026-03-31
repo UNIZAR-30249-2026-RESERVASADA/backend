@@ -54,27 +54,8 @@ async function login(email, password) {
   }
 }
 
-async function obtenerRestricciones(rol) {
-  try {
-    console.log("appServerHttpClient.obtenerRestricciones: enviando a", `${appServerUrl}/auth/restricciones/${rol}`);
-    const resp = await fetch(`${appServerUrl}/auth/restricciones/${rol}`);
-
-    console.log("appServerHttpClient.obtenerRestricciones: response status", resp.status);
-
-    if (!resp.ok) {
-      throw new Error(`Error ${resp.status}`);
-    }
-
-    return await resp.json();
-  } catch (err) {
-    console.error("appServerHttpClient.obtenerRestricciones: error", err);
-    throw err;
-  }
-}
-
 module.exports = {
   crearReserva,
   obtenerMetadatosEspacios,
   login,
-  obtenerRestricciones,
 };

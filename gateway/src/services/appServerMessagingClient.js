@@ -41,22 +41,8 @@ async function login(email, password) {
   return response.data;
 }
 
-async function obtenerRestricciones(rol) {
-  const response = await rpcCall(REQUEST_QUEUE, {
-    action: "obtenerRestricciones",
-    payload: { rol },
-  });
-
-  if (!response.ok) {
-    throw new Error(response.message || "Error obteniendo restricciones");
-  }
-
-  return response.data;
-}
-
 module.exports = {
   crearReserva,
   obtenerMetadatosEspacios,
   login,
-  obtenerRestricciones,
 };

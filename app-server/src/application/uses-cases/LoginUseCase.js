@@ -19,7 +19,7 @@ class LoginUseCase {
       throw new Error("Usuario no encontrado");
     }
 
-    // ⭐ Validar password con bcrypt (comparar hasheada)
+    // Validar password con bcrypt (comparar hasheada)
     console.log("LoginUseCase: comparando passwords");
     console.log("LoginUseCase: password recibido:", password);
     console.log("LoginUseCase: hash en BD:", usuario.contrasenia);
