@@ -1,14 +1,21 @@
 const { Op } = require("sequelize");
 const ReservaRepository = require("../../domain/repositories/ReservaRepository");
 
+function sumarHoras(horaInicio, duracion) {
+  const [h, m] = horaInicio.split(":").map(Number);
+  const inicioMin = h * 60 + m;
+  const finMin = inicioMin + duracion * 60;
+  return finMin;
+}
+
 class SequelizeReservaRepository extends ReservaRepository {
   constructor({ ReservaModel }) {
     super();
     this.ReservaModel = ReservaModel;
   }
+
   async save(reserva) {
-    console.log("SequelizeReservaRepository.save() recibió:", reserva);
-    const creada = await this.ReservaModel.create({
+    return await this.ReservaModel.create({
       espacioId: reserva.espacioId,
       usuarioId: reserva.usuarioId,
       fecha: reserva.fecha,
@@ -19,31 +26,27 @@ class SequelizeReservaRepository extends ReservaRepository {
       descripcion: reserva.descripcion,
       estado: reserva.estado,
     });
-    console.log("Reserva guardada en BD:", creada.toJSON());
-    return creada;
   }
 
-  async findSolapadas(espacioId, fecha, horaInicio, horaFin) {
-    return await this.ReservaModel.findAll({
+  async findSolapadas(espacioId, fecha, horaInicio, duracion) {
+    const reservas = await this.ReservaModel.findAll({
       where: {
         espacioId,
         fecha,
         estado: {
           [Op.ne]: "cancelada",
         },
-        [Op.and]: [
-          {
-            horaInicio: {
-              [Op.lt]: horaFin,
-            },
-          },
-          {
-            horaFin: {
-              [Op.gt]: horaInicio,
-            },
-          },
-        ],
       },
+    });
+
+    const nuevaInicio = sumarHoras(horaInicio, 0);
+    const nuevaFin = sumarHoras(horaInicio, duracion);
+
+    return reservas.filter((r) => {
+      const existenteInicio = sumarHoras(r.horaInicio, 0);
+      const existenteFin = sumarHoras(r.horaInicio, Number(r.duracion));
+
+      return nuevaInicio < existenteFin && nuevaFin > existenteInicio;
     });
   }
 

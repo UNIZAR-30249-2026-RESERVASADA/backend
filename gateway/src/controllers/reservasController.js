@@ -2,10 +2,15 @@ const appServerClient = require("../services/appServerClient");
 
 async function crearReserva(req, res, next) {
   try {
-    const reservaData = req.validatedBody;
-    console.log("Controller: reservaData recibida =", reservaData);
+    console.log("Controller: reservaData recibida =", req.validatedBody);
+    console.log("Controller: usuario autenticado =", req.user);
 
-    const resultado = await appServerClient.crearReserva(reservaData);
+    const payload = {
+      ...req.validatedBody,
+      usuarioId: req.user.id,
+    };
+
+    const resultado = await appServerClient.crearReserva(payload);
 
     return res.status(201).json(resultado);
   } catch (error) {

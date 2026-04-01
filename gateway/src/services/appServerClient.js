@@ -1,8 +1,7 @@
-const httpClient = require("./appServerHttpClient");
+const messagingClient = require("./appServerMessagingClient");
 
 module.exports = {
-  login: httpClient.login,
-  crearReserva: httpClient.crearReserva,
-  obtenerMetadatosEspacios: httpClient.obtenerMetadatosEspacios,
-  obtenerRestricciones: httpClient.obtenerRestricciones,
+  crearReserva: messagingClient.crearReserva,
+  obtenerMetadatosEspacios: messagingClient.obtenerMetadatosEspacios,
+  login: messagingClient.login,
 };

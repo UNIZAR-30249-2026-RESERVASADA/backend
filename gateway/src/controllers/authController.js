@@ -1,19 +1,25 @@
 const appServerClient = require("../services/appServerClient");
+const { signToken } = require("../services/jwtService");
 
-async function loginUsuario(req, res, next) {
+async function login(req, res, next) {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ message: "Email y password son obligatorios" });
-    }
+    const loginResult = await appServerClient.login(email, password);
+    const { usuario, restriccionesReserva } = loginResult;
 
-    const usuario = await appServerClient.login(email, password);
+    const token = signToken(usuario);
 
-    res.status(200).json(usuario);
-  } catch (err) {
-    next(err);
+    return res.status(200).json({
+      token,
+      usuario,
+      restriccionesReserva,
+    });
+  } catch (error) {
+    next(error);
   }
 }
 
-module.exports = { loginUsuario };
+module.exports = {
+  login,
+};

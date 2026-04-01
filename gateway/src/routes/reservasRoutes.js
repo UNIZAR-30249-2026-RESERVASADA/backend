@@ -1,5 +1,6 @@
 const express = require("express");
 const reservaController = require("../controllers/reservasController");
+const authMiddleware = require("../middlewares/authMiddleware");
 const validateDto = require("../middlewares/validateDto");
 const { validateCreateReservaDto } = require("../dtos/createReservaDto");
 
@@ -77,6 +78,7 @@ const router = express.Router();
  */
 router.post(
   "/reservas",
+  authMiddleware,
   validateDto(validateCreateReservaDto),
   reservaController.crearReserva
 );

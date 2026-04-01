@@ -1,5 +1,5 @@
 const express = require("express");
-const { loginUsuario } = require("../controllers/authController");
+const authController = require("../controllers/authController");
 const validateDto = require("../middlewares/validateDto");
 const { validateLoginDto } = require("../dtos/loginDto");
 
@@ -46,6 +46,6 @@ const router = express.Router();
  *       404:
  *         description: Usuario no encontrado
  */
-router.post("/auth/login", validateDto(validateLoginDto), loginUsuario);
+router.post("/auth/login", validateDto(validateLoginDto), authController.login);
 
 module.exports = router;
