@@ -7,8 +7,20 @@ class EspacioRepository {
     throw new Error("Método findAll() no implementado");
   }
 
-  async updateCategoria(_id, data) {
+  async findAllMetadatos() {
+    throw new Error("Método findAllMetadatos() no implementado");
+  }
+
+  async updateCategoria(_id, _data) {
     throw new Error("Método updateCategoria() no implementado");
+  }
+
+  async updateReservable(_id, _reservable) {
+    throw new Error("Método updateReservable() no implementado");
+  }
+
+  async updateAforo(_id, _aforo) {
+    throw new Error("Método updateAforo() no implementado");
   }
 }
 

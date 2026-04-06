@@ -1,15 +1,15 @@
 const { conectar, Espacio, Reserva, Usuario } = require("./infrastructure/database");
 
-const { connectRabbitMQ } = require("./messaging/rabbitmq");
+const { connectRabbitMQ }    = require("./messaging/rabbitmq");
 const { startRequestConsumer } = require("./messaging/requestConsumer");
 
 const SequelizeEspacioRepository = require("./infrastructure/repositories/SequelizeEspacioRepository");
 const SequelizeReservaRepository = require("./infrastructure/repositories/SequelizeReservaRepository");
 const SequelizeUsuarioRepository = require("./infrastructure/repositories/SequelizeUsuarioRepository");
 
-const GetEspaciosMetadatosUseCase = require("./application/uses-cases/GetEspaciosMetadatosUseCase");
-const ReservarEspacioUseCase = require("./application/uses-cases/ReservarEspacioUseCase");
-const LoginUseCase = require("./application/uses-cases/LoginUseCase");
+const GetEspaciosMetadatos = require("./application/use-cases/GetEspaciosMetadatos");
+const ReservarEspacio      = require("./application/use-cases/ReservarEspacio");
+const Login                = require("./application/use-cases/Login");
 
 const ReservaEntity = require("./domain/entities/Reserva");
 const ReservaPolicy = require("./domain/policies/ReservaPolicy");
@@ -22,22 +22,14 @@ async function main() {
   await connectRabbitMQ();
 
   // 3. Repositorios
-  const espacioRepository = new SequelizeEspacioRepository({
-    EspacioModel: Espacio,
-  });
+  const espacioRepository  = new SequelizeEspacioRepository({ EspacioModel: Espacio });
+  const reservaRepository  = new SequelizeReservaRepository({ ReservaModel: Reserva });
+  const usuarioRepository  = new SequelizeUsuarioRepository({ UsuarioModel: Usuario });
 
-  const reservaRepository = new SequelizeReservaRepository({
-    ReservaModel: Reserva,
-  });
+  // 4. Casos de uso
+  const getEspaciosMetadatos = new GetEspaciosMetadatos({ espacioRepository });
 
-  const usuarioRepository = new SequelizeUsuarioRepository(Usuario);
-
-  // 4. Use Cases
-  const getEspaciosMetadatosUseCase = new GetEspaciosMetadatosUseCase({
-    espacioRepository,
-  });
-
-  const reservarEspacioUseCase = new ReservarEspacioUseCase({
+  const reservarEspacio = new ReservarEspacio({
     espacioRepository,
     reservaRepository,
     ReservaEntity,
@@ -45,18 +37,16 @@ async function main() {
     ReservaPolicy,
   });
 
-  const loginUseCase = new LoginUseCase({
-    usuarioRepository,
-  });
+  const login = new Login({ usuarioRepository });
 
-  // 5. Consumer 
+  // 5. Consumer — recibe mensajes del broker y los despacha al caso de uso correcto
   await startRequestConsumer({
-    reservarEspacioUseCase,
-    getEspaciosMetadatosUseCase,
-    loginUseCase,
+    reservarEspacio,
+    getEspaciosMetadatos,
+    login,
   });
 
-  console.log("🚀 App-server listo (RabbitMQ + DB) y esperando mensajes...");
+  console.log("App-server listo y esperando mensajes...");
 }
 
 main().catch(console.error);

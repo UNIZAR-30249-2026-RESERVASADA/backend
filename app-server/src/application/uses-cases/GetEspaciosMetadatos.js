@@ -1,4 +1,4 @@
-class GetEspaciosMetadatosUseCase {
+class GetEspaciosMetadatos {
   constructor({ espacioRepository }) {
     this.espacioRepository = espacioRepository;
   }
@@ -16,4 +16,4 @@ class GetEspaciosMetadatosUseCase {
   }
 }
 
-module.exports = GetEspaciosMetadatosUseCase;
+module.exports = GetEspaciosMetadatos;

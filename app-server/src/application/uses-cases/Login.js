@@ -1,6 +1,6 @@
 const bcrypt = require("bcryptjs");
 
-class LoginUseCase {
+class Login {
   constructor({ usuarioRepository }) {
     this.usuarioRepository = usuarioRepository;
   }
@@ -42,4 +42,4 @@ class LoginUseCase {
   }
 }
 
-module.exports = LoginUseCase;
+module.exports = Login;
