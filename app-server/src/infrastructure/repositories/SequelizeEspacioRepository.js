@@ -46,7 +46,12 @@ class SequelizeEspacioRepository extends EspacioRepository {
       attributes: ["id_espacio", "categoria", "reservable", "aforo"],
       order: [["id_espacio", "ASC"]],
     });
-    return modelos.map((m) => this._toEntity(m));
+    return modelos.map((m) => ({
+      id_espacio: m.id_espacio,
+      categoria:  m.categoria,
+      reservable: m.reservable,
+      aforo:      m.aforo,
+    }));
   }
 
   async updateCategoria(id, categoria) {

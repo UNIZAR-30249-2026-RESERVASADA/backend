@@ -1,5 +1,11 @@
 const SolapamientoService = require("../../domain/services/SolapamientoService");
 
+function domainError(message, statusCode) {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  return error;
+}
+
 class ReservarEspacio {
   constructor({
     espacioRepository,
@@ -8,11 +14,11 @@ class ReservarEspacio {
     usuarioRepository,
     ReservaPolicy,
   }) {
-    this.espacioRepository  = espacioRepository;
-    this.reservaRepository  = reservaRepository;
-    this.ReservaEntity      = ReservaEntity;
-    this.usuarioRepository  = usuarioRepository;
-    this.ReservaPolicy      = ReservaPolicy;
+    this.espacioRepository = espacioRepository;
+    this.reservaRepository = reservaRepository;
+    this.ReservaEntity     = ReservaEntity;
+    this.usuarioRepository = usuarioRepository;
+    this.ReservaPolicy     = ReservaPolicy;
   }
 
   async execute({
@@ -27,14 +33,14 @@ class ReservarEspacio {
   }) {
     // 1. Verificar usuario y espacio existen
     const usuario = await this.usuarioRepository.findById(usuarioId);
-    if (!usuario) throw new Error("El usuario no existe");
-    if (!usuario.rol) throw new Error("El usuario no tiene rol asignado");
+    if (!usuario) throw domainError("El usuario no existe", 404);
+    if (!usuario.rol) throw domainError("El usuario no tiene rol asignado", 400);
 
     const espacio = await this.espacioRepository.findById(espacioId);
-    if (!espacio) throw new Error("El espacio no existe");
-    if (!espacio.puedeReservarse()) throw new Error("El espacio no es reservable");
+    if (!espacio) throw domainError("El espacio no existe", 404);
+    if (!espacio.puedeReservarse()) throw domainError("El espacio no es reservable", 400);
 
-    // 2. Validar permisos (ReservaPolicy usa value objects internamente)
+    // 2. Validar permisos
     const puedeReservar = this.ReservaPolicy.puedeReservar(
       usuario.rol,
       espacio.categoria,
@@ -42,13 +48,13 @@ class ReservarEspacio {
       espacio.departamentoId
     );
     if (!puedeReservar) {
-      throw new Error(
-        `Tu rol (${usuario.rol}) no permite reservar espacios de tipo ${espacio.categoria}`
+      throw domainError(
+        `Tu rol (${usuario.rol}) no permite reservar espacios de tipo ${espacio.categoria}`,
+        403
       );
     }
 
     // 3. Construir la entidad — PeriodoTiempo valida fecha/horaInicio/duracion
-    //    y Reserva valida numPersonas, tipoUso y descripcion
     const reserva = new this.ReservaEntity({
       espacioId,
       usuarioId,
@@ -61,25 +67,22 @@ class ReservarEspacio {
       estado: "aceptada",
     });
 
-    // 4. Validar aforo usando el método de la entidad Espacio
+    // 4. Validar aforo
     if (reserva.numPersonas !== null && !espacio.admiteOcupacion(reserva.numPersonas)) {
-      throw new Error(
-        `El número de personas (${reserva.numPersonas}) supera el aforo del espacio (${espacio.aforo})`
+      throw domainError(
+        `El número de personas (${reserva.numPersonas}) supera el aforo del espacio (${espacio.aforo})`,
+        400
       );
     }
 
-    // 5. Validar solapamientos — el servicio de dominio hace la lógica,
-    //    el repositorio solo trae las reservas candidatas del mismo espacio/fecha
-    const reservasExistentes = await this.reservaRepository.findByEspacioYFecha(
-      espacioId,
-      fecha
-    );
+    // 5. Validar solapamientos
+    const reservasExistentes = await this.reservaRepository.findByEspacioYFecha(espacioId, fecha);
     const solapadas = SolapamientoService.filtrarSolapadas(
       { fecha, horaInicio, duracion: Number(duracion) },
       reservasExistentes
     );
     if (solapadas.length > 0) {
-      throw new Error("Ya existe una reserva para ese espacio en esa franja horaria");
+      throw domainError("Ya existe una reserva para ese espacio en esa franja horaria", 400);
     }
 
     // 6. Guardar

@@ -1,7 +1,7 @@
-const IUsuarioRepository = require("../../domain/repositories/IUsuarioRepository");
+const UsuarioRepository = require("../../domain/repositories/UsuarioRepository");
 const Usuario = require("../../domain/entities/Usuario");
 
-class SequelizeUsuarioRepository extends IUsuarioRepository {
+class SequelizeUsuarioRepository extends UsuarioRepository {
   constructor({ UsuarioModel }) {
     super();
     this.UsuarioModel = UsuarioModel;

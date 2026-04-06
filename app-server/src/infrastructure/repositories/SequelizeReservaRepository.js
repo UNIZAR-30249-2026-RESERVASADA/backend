@@ -15,7 +15,7 @@ class SequelizeReservaRepository extends ReservaRepository {
       espacioId:   modelo.espacioId   ?? modelo.espacio_id,
       usuarioId:   modelo.usuarioId   ?? modelo.usuario_id,
       fecha:       modelo.fecha,
-      horaInicio:  modelo.horaInicio  ?? modelo.hora_inicio,
+      horaInicio:  (modelo.horaInicio ?? modelo.hora_inicio ?? "").toString().slice(0, 5),  // ← este cambio
       duracion:    modelo.duracion,
       numPersonas: modelo.numPersonas ?? modelo.num_personas ?? null,
       tipoUso:     modelo.tipoUso     ?? modelo.tipo_uso     ?? null,
