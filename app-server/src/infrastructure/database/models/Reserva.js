@@ -30,7 +30,8 @@ module.exports = (sequelize) => {
       fecha: {
         type: DataTypes.DATEONLY,
         allowNull: false,
-      },      horaInicio: {
+      },      
+      horaInicio: {
         type: DataTypes.TIME,
         allowNull: false,
         field: "hora_inicio",

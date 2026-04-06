@@ -1,159 +1,95 @@
+const Rol              = require("../value-objects/Rol");
+const CategoriaReserva = require("../value-objects/CategoriaReserva");
+
 class ReservaPolicy {
+  /**
+   * Determina si un usuario con el rol dado puede reservar un espacio
+   * de la categoría dada, teniendo en cuenta restricciones de departamento.
+   * Función sin efectos secundarios.
+   *
+   * @param {string|Rol} rolUsuario
+   * @param {string|CategoriaReserva} categoriaEspacio
+   * @param {string|null} deptUsuario
+   * @param {string|null} deptEspacio
+   * @returns {boolean}
+   */
   static puedeReservar(rolUsuario, categoriaEspacio, deptUsuario = null, deptEspacio = null) {
-    if (!rolUsuario || !categoriaEspacio) {
+    if (!rolUsuario || !categoriaEspacio) return false;
+
+    const rol      = rolUsuario      instanceof Rol              ? rolUsuario      : new Rol(rolUsuario);
+    const categoria = categoriaEspacio instanceof CategoriaReserva ? categoriaEspacio : new CategoriaReserva(categoriaEspacio);
+
+    const mismoDepto = deptUsuario && deptEspacio &&
+      String(deptUsuario) === String(deptEspacio);
+
+    if (rol.esGerente()) return true;
+
+    if (rol.esEstudiante()) {
+      return categoria.esSalaComun();
+    }
+
+    if (rol.esInvestigadorContratado() || rol.esDocenteInvestigador()) {
+      if (categoria.esLaboratorio() || categoria.esDespacho()) return !!mismoDepto;
+      return categoria.esAula() || categoria.esSeminario() || categoria.esSalaComun();
+    }
+
+    if (rol.esTecnicoLaboratorio()) {
+      if (categoria.esLaboratorio()) return !!mismoDepto;
+      if (categoria.esSeminario() || categoria.esSalaComun()) return true;
       return false;
     }
 
-    const rol = rolUsuario.toLowerCase();
-    const categoria = categoriaEspacio.toLowerCase();
-
-    if (rol === "estudiante") {
-      return categoria.includes("sala común");
+    if (rol.esConserje()) {
+      return categoria.esAula() || categoria.esSeminario() || categoria.esSalaComun();
     }
 
-    if (rol === "investigador_contratado") {
-      if (categoria.includes("laboratorio") || categoria.includes("despacho")) {
-        if (!deptEspacio) return false;
-        return deptUsuario && String(deptUsuario) === String(deptEspacio);
-      }
-      return (
-        categoria.includes("aula") ||
-        categoria.includes("seminario") ||
-        categoria.includes("sala común")
-      );
-    }
-
-    if (rol === "docente_investigador") {
-      if (categoria.includes("laboratorio") || categoria.includes("despacho")) {
-        if (!deptEspacio) return false;
-        return deptUsuario && String(deptUsuario) === String(deptEspacio);
-      }
-      return (
-        categoria.includes("aula") ||
-        categoria.includes("seminario") ||
-        categoria.includes("sala común")
-      );
-    }
-
-    if (rol === "tecnico_laboratorio") {
-      if (categoria.includes("laboratorio")) {
-        if (!deptEspacio) return false;
-        return deptUsuario && String(deptUsuario) === String(deptEspacio);
-      }
-      return false;
-    }
-
-    if (rol === "conserje") {
-      return (
-        categoria.includes("aula") ||
-        categoria.includes("seminario") ||
-        categoria.includes("sala común")
-      );
-    }
-
-    if (rol === "investigador_visitante") {
-      if (categoria.includes("laboratorio")) {
-        if (!deptEspacio) return false;
-        return deptUsuario && String(deptUsuario) === String(deptEspacio);
-      }
-      return (
-        categoria.includes("aula") ||
-        categoria.includes("seminario") ||
-        categoria.includes("sala común")
-      );
-    }
-
-    if (rol === "gerente") {
-      return true;
+    if (rol.esInvestigadorVisitante()) {
+      if (categoria.esLaboratorio()) return !!mismoDepto;
+      return categoria.esAula() || categoria.esSeminario() || categoria.esSalaComun();
     }
 
     return false;
   }
 
-  static obtenerRestriccionesUI(rolUsuario) {
-    const rol = (rolUsuario || "").toLowerCase();
+  /**
+   * Devuelve las categorías que el rol puede reservar sin restricción de departamento.
+   * Función sin efectos secundarios.
+   * @param {string} rolUsuario
+   * @returns {string[]}
+   */
+  static categoriasLibres(rolUsuario) {
+    const rol = new Rol(rolUsuario);
 
-    const mapa = {
-      estudiante: {
-        rol: "estudiante",
-        mensaje: "Puedes reservar: Solo Salas comunes",
-        categoriasPermitidas: ["sala común"],
-        categoriasConRestriccionDepartamento: [],
-        puedeReservarTodo: false,
-      },
-      investigador_contratado: {
-        rol: "investigador_contratado",
-        mensaje:
-          "Puedes reservar: Aulas, Salas comunes, Seminarios, Laboratorios (solo de tu dpto), Despachos (solo de tu dpto)",
-        categoriasPermitidas: [
-          "aula",
-          "seminario",
-          "sala común",
-          "laboratorio",
-          "despacho",
-        ],
-        categoriasConRestriccionDepartamento: ["laboratorio", "despacho"],
-        puedeReservarTodo: false,
-      },
-      docente_investigador: {
-        rol: "docente_investigador",
-        mensaje:
-          "Puedes reservar: Aulas, Salas comunes, Seminarios, Laboratorios (solo de tu dpto), Despachos (solo de tu dpto)",
-        categoriasPermitidas: [
-          "aula",
-          "seminario",
-          "sala común",
-          "laboratorio",
-          "despacho",
-        ],
-        categoriasConRestriccionDepartamento: ["laboratorio", "despacho"],
-        puedeReservarTodo: false,
-      },
-      tecnico_laboratorio: {
-        rol: "tecnico_laboratorio",
-        mensaje: "Puedes reservar: Laboratorios (solo de tu dpto)",
-        categoriasPermitidas: ["laboratorio"],
-        categoriasConRestriccionDepartamento: ["laboratorio"],
-        puedeReservarTodo: false,
-      },
-      conserje: {
-        rol: "conserje",
-        mensaje: "Puedes reservar: Aulas, Seminarios, Salas comunes",
-        categoriasPermitidas: ["aula", "seminario", "sala común"],
-        categoriasConRestriccionDepartamento: [],
-        puedeReservarTodo: false,
-      },
-      investigador_visitante: {
-        rol: "investigador_visitante",
-        mensaje:
-          "Puedes reservar: Aulas, Salas comunes, Seminarios, Laboratorios (solo de tu dpto)",
-        categoriasPermitidas: [
-          "aula",
-          "seminario",
-          "sala común",
-          "laboratorio",
-        ],
-        categoriasConRestriccionDepartamento: ["laboratorio"],
-        puedeReservarTodo: false,
-      },
-      gerente: {
-        rol: "gerente",
-        mensaje: "Puedes reservar cualquier espacio",
-        categoriasPermitidas: [],
-        categoriasConRestriccionDepartamento: [],
-        puedeReservarTodo: true,
-      },
-    };
+    if (rol.esGerente())    return CategoriaReserva.VALORES;
+    if (rol.esEstudiante()) return ["sala comun"];
 
-    return (
-      mapa[rol] || {
-        rol,
-        mensaje: "Sin permisos definidos",
-        categoriasPermitidas: [],
-        categoriasConRestriccionDepartamento: [],
-        puedeReservarTodo: false,
-      }
-    );
+    if (rol.esInvestigadorContratado() || rol.esDocenteInvestigador()) {
+      return ["aula", "seminario", "sala comun"];
+    }
+
+    if (rol.esTecnicoLaboratorio())    return ["seminario", "sala comun"];
+    if (rol.esConserje())              return ["aula", "seminario", "sala comun"];
+    if (rol.esInvestigadorVisitante()) return ["aula", "seminario", "sala comun"];
+
+    return [];
+  }
+
+  /**
+   * Devuelve las categorías que requieren coincidir en departamento.
+   * Función sin efectos secundarios.
+   * @param {string} rolUsuario
+   * @returns {string[]}
+   */
+  static categoriasConRestriccionDepartamento(rolUsuario) {
+    const rol = new Rol(rolUsuario);
+
+    if (rol.esInvestigadorContratado() || rol.esDocenteInvestigador()) {
+      return ["laboratorio", "despacho"];
+    }
+    if (rol.esTecnicoLaboratorio() || rol.esInvestigadorVisitante()) {
+      return ["laboratorio"];
+    }
+    return [];
   }
 }
 

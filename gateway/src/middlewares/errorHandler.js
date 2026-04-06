@@ -1,8 +1,7 @@
 function errorHandler(err, req, res, next) {
-  console.error("Error en gateway:", err);
-
-  return res.status(500).json({
-    message: "Error interno del gateway",
+  const status = err.statusCode || 500;
+  return res.status(status).json({
+    message: err.message || "Error interno del gateway",
   });
 }
 

@@ -3,16 +3,24 @@ class ReservaRepository {
     throw new Error("Método save() no implementado");
   }
 
-  async findSolapadas(_espacioId, _fecha, _horaInicio, _horaFin) {
-    throw new Error("Método findSolapadas() no implementado");
-  }
-
   async findById(_id) {
     throw new Error("Método findById() no implementado");
   }
 
   async findByUsuario(_usuarioId) {
     throw new Error("Método findByUsuario() no implementado");
+  }
+
+  async findByEspacioYFecha(_espacioId, _fecha) {
+    throw new Error("Método findByEspacioYFecha() no implementado");
+  }
+
+  async findVivas() {
+    throw new Error("Método findVivas() no implementado");
+  }
+
+  async deleteById(_id) {
+    throw new Error("Método deleteById() no implementado");
   }
 }
 
