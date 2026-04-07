@@ -12,31 +12,34 @@ function handleResponse(response, defaultMessage) {
 }
 
 async function crearReserva(reservaData) {
-  const response = await rpcCall(REQUEST_QUEUE, {
-    action: "crearReserva",
-    payload: reservaData,
-  });
+  const response = await rpcCall(REQUEST_QUEUE, { action: "crearReserva", payload: reservaData });
   return handleResponse(response, "Error al crear la reserva");
 }
 
 async function obtenerMetadatosEspacios() {
-  const response = await rpcCall(REQUEST_QUEUE, {
-    action: "obtenerMetadatosEspacios",
-    payload: {},
-  });
+  const response = await rpcCall(REQUEST_QUEUE, { action: "obtenerMetadatosEspacios", payload: {} });
   return handleResponse(response, "Error obteniendo metadatos de espacios");
 }
 
 async function login(email, password) {
-  const response = await rpcCall(REQUEST_QUEUE, {
-    action: "login",
-    payload: { email, password },
-  });
+  const response = await rpcCall(REQUEST_QUEUE, { action: "login", payload: { email, password } });
   return handleResponse(response, "Error en login");
+}
+
+async function obtenerReservasUsuario(usuarioId) {
+  const response = await rpcCall(REQUEST_QUEUE, { action: "obtenerReservasUsuario", payload: { usuarioId } });
+  return handleResponse(response, "Error obteniendo reservas del usuario");
+}
+
+async function cancelarReservaPropia(reservaId, usuarioId) {
+  const response = await rpcCall(REQUEST_QUEUE, { action: "cancelarReservaPropia", payload: { reservaId, usuarioId } });
+  return handleResponse(response, "Error cancelando la reserva");
 }
 
 module.exports = {
   crearReserva,
   obtenerMetadatosEspacios,
   login,
+  obtenerReservasUsuario,
+  cancelarReservaPropia,
 };

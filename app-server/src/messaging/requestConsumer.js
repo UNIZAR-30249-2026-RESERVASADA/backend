@@ -4,8 +4,10 @@ async function startRequestConsumer({
   reservarEspacio,
   getEspaciosMetadatos,
   login,
+  obtenerReservasUsuario,
+  cancelarReservaPropia,
 }) {
-  const channel = await getChannel();
+  const channel      = await getChannel();
   const requestQueue = process.env.REQUEST_QUEUE || "reservas.requests";
 
   await channel.assertQueue(requestQueue, { durable: true });
@@ -13,9 +15,8 @@ async function startRequestConsumer({
   channel.consume(requestQueue, async (msg) => {
     if (!msg) return;
 
-    const replyTo      = msg.properties.replyTo;
+    const replyTo       = msg.properties.replyTo;
     const correlationId = msg.properties.correlationId;
-
     let response;
 
     try {
@@ -38,15 +39,25 @@ async function startRequestConsumer({
         response = { ok: true, data: resultado };
       }
 
+      else if (action === "obtenerReservasUsuario") {
+        const data = await obtenerReservasUsuario.execute(payload);
+        response = { ok: true, data };
+      }
+
+      else if (action === "cancelarReservaPropia") {
+        const data = await cancelarReservaPropia.execute(payload);
+        response = { ok: true, data };
+      }
+
       else {
         response = { ok: false, message: `Acción no soportada: ${action}` };
       }
 
     } catch (error) {
       response = {
-        ok: false,
+        ok:         false,
         statusCode: error.statusCode || 500,
-        message: error.message || "Error procesando mensaje",
+        message:    error.message || "Error procesando mensaje",
       };
     }
 

@@ -43,14 +43,17 @@ class SequelizeEspacioRepository extends EspacioRepository {
 
   async findAllMetadatos() {
     const modelos = await this.EspacioModel.findAll({
-      attributes: ["id_espacio", "categoria", "reservable", "aforo"],
+      attributes: ["gid", "id_espacio", "nombre", "categoria", "reservable", "aforo", "planta"],
       order: [["id_espacio", "ASC"]],
     });
     return modelos.map((m) => ({
+      gid:        m.gid,
       id_espacio: m.id_espacio,
+      nombre:     m.nombre,
       categoria:  m.categoria,
       reservable: m.reservable,
       aforo:      m.aforo,
+      planta:     m.planta,
     }));
   }
 
