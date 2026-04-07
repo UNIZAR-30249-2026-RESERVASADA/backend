@@ -1,5 +1,6 @@
 const Rol              = require("../value-objects/Rol");
 const CategoriaReserva = require("../value-objects/CategoriaReserva");
+const Departamento     = require("../entities/Departamento");
 
 class ReservaPolicy {
   /**
@@ -9,18 +10,20 @@ class ReservaPolicy {
    *
    * @param {string|Rol} rolUsuario
    * @param {string|CategoriaReserva} categoriaEspacio
-   * @param {string|null} deptUsuario
-   * @param {string|null} deptEspacio
+   * @param {string|null} deptUsuarioId
+   * @param {string|null} deptEspacioId
    * @returns {boolean}
    */
-  static puedeReservar(rolUsuario, categoriaEspacio, deptUsuario = null, deptEspacio = null) {
+  static puedeReservar(rolUsuario, categoriaEspacio, deptUsuarioId = null, deptEspacioId = null) {
     if (!rolUsuario || !categoriaEspacio) return false;
 
     const rol      = rolUsuario      instanceof Rol              ? rolUsuario      : new Rol(rolUsuario);
     const categoria = categoriaEspacio instanceof CategoriaReserva ? categoriaEspacio : new CategoriaReserva(categoriaEspacio);
 
-    const mismoDepto = deptUsuario && deptEspacio &&
-      String(deptUsuario) === String(deptEspacio);
+    const mismoDepto = deptUsuarioId && deptEspacioId
+      ? new Departamento({ id: deptUsuarioId, nombre: "" })
+          .esMismoDepartamento(new Departamento({ id: deptEspacioId, nombre: "" }))
+      : false;
 
     if (rol.esGerente()) return true;
 
@@ -29,12 +32,12 @@ class ReservaPolicy {
     }
 
     if (rol.esInvestigadorContratado() || rol.esDocenteInvestigador()) {
-      if (categoria.esLaboratorio() || categoria.esDespacho()) return !!mismoDepto;
+      if (categoria.esLaboratorio() || categoria.esDespacho()) return mismoDepto;
       return categoria.esAula() || categoria.esSeminario() || categoria.esSalaComun();
     }
 
     if (rol.esTecnicoLaboratorio()) {
-      if (categoria.esLaboratorio()) return !!mismoDepto;
+      if (categoria.esLaboratorio()) return mismoDepto;
       if (categoria.esSeminario() || categoria.esSalaComun()) return true;
       return false;
     }
@@ -44,7 +47,7 @@ class ReservaPolicy {
     }
 
     if (rol.esInvestigadorVisitante()) {
-      if (categoria.esLaboratorio()) return !!mismoDepto;
+      if (categoria.esLaboratorio()) return mismoDepto;
       return categoria.esAula() || categoria.esSeminario() || categoria.esSalaComun();
     }
 
