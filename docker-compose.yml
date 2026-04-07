@@ -48,12 +48,12 @@ services:
       PYGEOAPI_CONFIG: /app/pygeoapi-config.yml
       PYGEOAPI_OPENAPI: /app/openapi.yml
     volumes:
-    - ./data/espacios_geojson:/data/espacios_geojson:ro
+      - ./data/espacios_geojson:/data/espacios_geojson:ro
     depends_on:
       postgres:
         condition: service_healthy
     networks:
-      - reservas_net  
+      - reservas_net
 
   app-server:
     build:
@@ -62,13 +62,11 @@ services:
     container_name: reservas_app_server
     environment:
       APP_SERVER_PORT: "4000"
-      # DB (para cuando metas Sequelize)
       DB_HOST: postgres
       DB_PORT: "5432"
       DB_NAME: reservas_db
       DB_USER: reservas_user
       DB_PASSWORD: reservas_pass
-      # Rabbit (para sobresaliente)
       RABBITMQ_URL: amqp://rabbit_user:rabbit_pass@rabbitmq:5672
       REQUEST_QUEUE: reservas.requests
       RESPONSE_QUEUE: reservas.responses
@@ -93,14 +91,16 @@ services:
       GATEWAY_PORT: "3000"
       JWT_SECRET: super_secreto_reservas
       JWT_EXPIRES_IN: 8h
-      # Rabbit (para sobresaliente)
       RABBITMQ_URL: amqp://rabbit_user:rabbit_pass@rabbitmq:5672
       REQUEST_QUEUE: reservas.requests
       RESPONSE_QUEUE: reservas.responses
+      GEO_SERVER_URL: http://geo-server:5000   # ← URL interna de PyGeoAPI
     depends_on:
       rabbitmq:
         condition: service_healthy
       app-server:
+        condition: service_started
+      geo-server:
         condition: service_started
     ports:
       - "3000:3000"
