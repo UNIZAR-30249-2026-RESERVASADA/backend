@@ -25,6 +25,14 @@ class SequelizeReservaRepository extends ReservaRepository {
   }
 
   async save(reserva) {
+    if (reserva.id) {
+      const modelo = await this.ReservaModel.findByPk(reserva.id);
+      if (!modelo) return null;
+      await modelo.update({
+        estado: reserva.estado,
+      });
+      return this._toEntity(modelo);
+    }
     const modelo = await this.ReservaModel.create({
       espacioId:   reserva.espacioId,
       usuarioId:   reserva.usuarioId,

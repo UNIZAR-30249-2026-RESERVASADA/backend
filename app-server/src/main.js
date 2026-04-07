@@ -7,9 +7,11 @@ const SequelizeEspacioRepository = require("./infrastructure/repositories/Sequel
 const SequelizeReservaRepository = require("./infrastructure/repositories/SequelizeReservaRepository");
 const SequelizeUsuarioRepository = require("./infrastructure/repositories/SequelizeUsuarioRepository");
 
-const GetEspaciosMetadatos = require("./application/use-cases/GetEspaciosMetadatos");
-const ReservarEspacio      = require("./application/use-cases/ReservarEspacio");
-const Login                = require("./application/use-cases/Login");
+const GetEspaciosMetadatos   = require("./application/use-cases/GetEspaciosMetadatos");
+const ReservarEspacio        = require("./application/use-cases/ReservarEspacio");
+const Login                  = require("./application/use-cases/Login");
+const ObtenerReservasUsuario = require("./application/use-cases/ObtenerReservasUsuario");
+const CancelarReservaPropia  = require("./application/use-cases/CancelarReservaPropia");
 
 const ReservaEntity = require("./domain/entities/Reserva");
 const ReservaPolicy = require("./domain/policies/ReservaPolicy");
@@ -39,11 +41,16 @@ async function main() {
 
   const login = new Login({ usuarioRepository });
 
+  const obtenerReservasUsuario = new ObtenerReservasUsuario({ reservaRepository });
+  const cancelarReservaPropia  = new CancelarReservaPropia({ reservaRepository });
+
   // 5. Consumer — recibe mensajes del broker y los despacha al caso de uso correcto
   await startRequestConsumer({
     reservarEspacio,
     getEspaciosMetadatos,
     login,
+    obtenerReservasUsuario,
+    cancelarReservaPropia,
   });
 
   console.log("App-server listo y esperando mensajes...");

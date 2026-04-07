@@ -5,13 +5,15 @@ class GetEspaciosMetadatos {
 
   async execute() {
     const espacios = await this.espacioRepository.findAllMetadatos();
-
     return espacios.map((espacio) => ({
+      gid:        espacio.gid,
       id_espacio: espacio.id_espacio,
-      categoria: espacio.categoria,
+      nombre:     espacio.nombre,
+      categoria:  espacio.categoria,
       reservable: espacio.reservable,
-      aforo: espacio.aforo,
-      ocupado: false,
+      aforo:      espacio.aforo,
+      planta:     espacio.planta,
+      ocupado:    false,
     }));
   }
 }
