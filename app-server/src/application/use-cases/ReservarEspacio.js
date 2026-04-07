@@ -10,15 +10,17 @@ class ReservarEspacio {
   constructor({
     espacioRepository,
     reservaRepository,
-    ReservaEntity,
+    edificioRepository,
     usuarioRepository,
+    reservaFactory,
     ReservaPolicy,
   }) {
-    this.espacioRepository = espacioRepository;
-    this.reservaRepository = reservaRepository;
-    this.ReservaEntity     = ReservaEntity;
-    this.usuarioRepository = usuarioRepository;
-    this.ReservaPolicy     = ReservaPolicy;
+    this.espacioRepository  = espacioRepository;
+    this.reservaRepository  = reservaRepository;
+    this.edificioRepository = edificioRepository;
+    this.usuarioRepository  = usuarioRepository;
+    this.reservaFactory     = reservaFactory;
+    this.ReservaPolicy      = ReservaPolicy;
   }
 
   async execute({
@@ -40,7 +42,18 @@ class ReservarEspacio {
     if (!espacio) throw domainError("El espacio no existe", 404);
     if (!espacio.puedeReservarse()) throw domainError("El espacio no es reservable", 400);
 
-    // 2. Validar permisos
+    // 2. Validar que el edificio está abierto a la hora de la reserva
+    if (espacio.edificioId) {
+      const edificio = await this.edificioRepository.findById(espacio.edificioId);
+      if (edificio && !edificio.estaAbierto(horaInicio)) {
+        throw domainError(
+          `El edificio no está abierto a las ${horaInicio}. Horario: ${edificio.horarioApertura} - ${edificio.horarioCierre}`,
+          400
+        );
+      }
+    }
+
+    // 3. Validar permisos
     const puedeReservar = this.ReservaPolicy.puedeReservar(
       usuario.rol,
       espacio.categoria,
@@ -54,8 +67,9 @@ class ReservarEspacio {
       );
     }
 
-    // 3. Construir la entidad — PeriodoTiempo valida fecha/horaInicio/duracion
-    const reserva = new this.ReservaEntity({
+    // 4. Construir la entidad mediante la factoría
+    // PeriodoTiempo valida fecha/horaInicio/duracion internamente
+    const reserva = this.reservaFactory.crear({
       espacioId,
       usuarioId,
       fecha,
@@ -64,10 +78,9 @@ class ReservarEspacio {
       numPersonas: numPersonas || null,
       tipoUso,
       descripcion,
-      estado: "aceptada",
     });
 
-    // 4. Validar aforo
+    // 5. Validar aforo
     if (reserva.numPersonas !== null && !espacio.admiteOcupacion(reserva.numPersonas)) {
       throw domainError(
         `El número de personas (${reserva.numPersonas}) supera el aforo del espacio (${espacio.aforo})`,
@@ -75,7 +88,7 @@ class ReservarEspacio {
       );
     }
 
-    // 5. Validar solapamientos
+    // 6. Validar solapamientos
     const reservasExistentes = await this.reservaRepository.findByEspacioYFecha(espacioId, fecha);
     const solapadas = SolapamientoService.filtrarSolapadas(
       { fecha, horaInicio, duracion: Number(duracion) },
@@ -85,7 +98,7 @@ class ReservarEspacio {
       throw domainError("Ya existe una reserva para ese espacio en esa franja horaria", 400);
     }
 
-    // 6. Guardar
+    // 7. Guardar
     return await this.reservaRepository.save(reserva);
   }
 }
