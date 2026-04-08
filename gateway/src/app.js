@@ -5,6 +5,7 @@ const swaggerSpec = require("./config/swagger");
 const reservaRoutes = require("./routes/reservasRoutes");
 const espacioRoutes = require("./routes/espaciosRoutes");
 const authRoutes = require("./routes/authRoutes");
+const geoRoutes = require("./routes/geoRoutes");
 const errorHandler = require("./middlewares/errorHandler");
 
 const app = express();
@@ -27,6 +28,7 @@ app.get("/docs.json", (req, res) => {
 app.use("/api", reservaRoutes);
 app.use("/api", espacioRoutes);
 app.use("/api", authRoutes);
+app.use("/api", geoRoutes);
 
 app.use(errorHandler);
 
