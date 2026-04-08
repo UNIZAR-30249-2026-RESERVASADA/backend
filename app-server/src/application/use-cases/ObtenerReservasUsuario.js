@@ -10,12 +10,11 @@ class ObtenerReservasUsuario {
 
     return reservas.map((r) => ({
       id:          r.id,
-      espacioId:   r.espacioId,
+      espacios:    r.espacios,   // [{ espacioId, numPersonas }]
       fecha:       r.fecha,
       horaInicio:  r.horaInicio,
       horaFin:     r.horaFin,
       duracion:    r.duracion,
-      numPersonas: r.numPersonas,
       tipoUso:     r.tipoUso,
       descripcion: r.descripcion,
       estado:      r.estado,

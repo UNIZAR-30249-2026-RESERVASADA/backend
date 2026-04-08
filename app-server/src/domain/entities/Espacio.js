@@ -10,13 +10,16 @@ const CATEGORIAS_RESERVABLES = ["aula", "seminario", "laboratorio", "despacho", 
  * - CategoriaReserva (value object) — categoría reservable del espacio
  *
  * Referencias indirectas a raíces de otros agregados:
- * - departamentoId → raíz del agregado Departamento
- * - edificioId    → raíz del agregado Edificio
+ * - departamentoId      → raíz del agregado Departamento
+ * - edificioId         → raíz del agregado Edificio
+ * - usuariosAsignados  → lista de ids de raíces del agregado Usuario
  *
  * Invariante de clase:
  * - reservable es siempre un booleano
+ * - asignadoAEina es siempre un booleano
  * - _categoria es un CategoriaReserva válido o null si la categoría no es reservable
  * - aforo, si está definido, es un número no negativo
+ * - usuariosAsignados es siempre un array (puede estar vacío)
  */
 class Espacio {
   constructor({
@@ -31,8 +34,10 @@ class Espacio {
     reservable,
     aforo,
     geom,
-    departamentoId = null,
-    edificioId     = null,
+    asignadoAEina     = false,
+    departamentoId    = null,
+    edificioId        = null,
+    usuariosAsignados = [],
   }) {
     this._categoriaRaw = categoria || null;
 
@@ -41,18 +46,20 @@ class Espacio {
       ? new CategoriaReserva(categoria)
       : null;
 
-    this.gid            = gid;
-    this.idEspacio      = idEspacio;
-    this.nombre         = nombre;
-    this.uso            = uso;
-    this.edificio       = edificio;
-    this.planta         = planta;
-    this.superficie     = superficie;
-    this.reservable     = !!reservable;
-    this.aforo          = aforo;
-    this.geom           = geom;
-    this.departamentoId = departamentoId;
-    this.edificioId     = edificioId;
+    this.gid               = gid;
+    this.idEspacio         = idEspacio;
+    this.nombre            = nombre;
+    this.uso               = uso;
+    this.edificio          = edificio;
+    this.planta            = planta;
+    this.superficie        = superficie;
+    this.reservable        = !!reservable;
+    this.aforo             = aforo;
+    this.geom              = geom;
+    this.asignadoAEina     = !!asignadoAEina;
+    this.departamentoId    = departamentoId;
+    this.edificioId        = edificioId;
+    this.usuariosAsignados = Array.isArray(usuariosAsignados) ? usuariosAsignados : [];
   }
 
   get categoria() {
@@ -94,6 +101,18 @@ class Espacio {
     if (!this.aforo) return true;
     const aforoPermitido = Math.floor(this.aforo * (porcentajeMaximo / 100));
     return numPersonas <= aforoPermitido;
+  }
+
+  /**
+   * Comprueba si el espacio está asignado a un usuario concreto.
+   * Función sin efectos secundarios.
+   * Precondición: usuarioId es un número válido
+   * Postcondición: devuelve true si el usuario está en la lista de asignados
+   * @param {number} usuarioId
+   * @returns {boolean}
+   */
+  estaAsignadoA(usuarioId) {
+    return this.usuariosAsignados.some((id) => String(id) === String(usuarioId));
   }
 }
 

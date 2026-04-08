@@ -48,16 +48,6 @@ class Usuario {
   get rolVO() { return this._rol; }
 
   /**
-   * Comprueba si el usuario tiene permisos de administración.
-   * Función sin efectos secundarios.
-   * Postcondición: devuelve true solo si el rol es docente_investigador y esGerente es true
-   * @returns {boolean}
-   */
-  esAdmin() {
-    return this._rol !== null && this._rol.esDocenteInvestigador() && this.esGerente;
-  }
-
-  /**
    * Comprueba si el rol de este usuario puede cambiar al rol indicado.
    * Función sin efectos secundarios.
    * Precondición: nuevoRol es una cadena con un valor de rol válido

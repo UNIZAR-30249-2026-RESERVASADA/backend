@@ -2,32 +2,41 @@ const EspacioRepository = require("../../domain/repositories/EspacioRepository")
 const Espacio = require("../../domain/entities/Espacio");
 
 class SequelizeEspacioRepository extends EspacioRepository {
-  constructor({ EspacioModel }) {
+  constructor({ EspacioModel, UsuarioEspacioModel }) {
     super();
-    this.EspacioModel = EspacioModel;
+    this.EspacioModel        = EspacioModel;
+    this.UsuarioEspacioModel = UsuarioEspacioModel;
   }
 
   _toEntity(modelo) {
     if (!modelo) return null;
+
+    const usuariosAsignados = (modelo.UsuarioEspacios ?? [])
+      .map((ue) => ue.usuarioId ?? ue.usuario_id);
+
     return new Espacio({
-      gid:           modelo.gid,
-      idEspacio:     modelo.id_espacio,
-      nombre:        modelo.nombre,
-      uso:           modelo.uso,
-      categoria:     modelo.categoria,
-      edificio:      modelo.edificio,
-      planta:        modelo.planta,
-      superficie:    modelo.superficie,
-      reservable:    modelo.reservable,
-      aforo:         modelo.aforo,
-      geom:          modelo.geom,
-      departamentoId: modelo.departamento_id ?? modelo.departamentoId ?? null,
-      edificioId:    modelo.edificio_id      ?? modelo.edificioId     ?? null,
+      gid:               modelo.gid,
+      idEspacio:         modelo.id_espacio,
+      nombre:            modelo.nombre,
+      uso:               modelo.uso,
+      categoria:         modelo.categoria,
+      edificio:          modelo.edificio,
+      planta:            modelo.planta,
+      superficie:        modelo.superficie,
+      reservable:        modelo.reservable,
+      aforo:             modelo.aforo,
+      geom:              modelo.geom,
+      asignadoAEina:     modelo.asignadoAEina ?? false,
+      departamentoId:    modelo.departamento_id ?? modelo.departamentoId ?? null,
+      edificioId:        modelo.edificio_id    ?? modelo.edificioId     ?? null,
+      usuariosAsignados,
     });
   }
 
   async findById(id) {
-    const modelo = await this.EspacioModel.findByPk(id);
+    const modelo = await this.EspacioModel.findByPk(id, {
+      include: [{ model: this.UsuarioEspacioModel }],
+    });
     return this._toEntity(modelo);
   }
 
@@ -37,7 +46,10 @@ class SequelizeEspacioRepository extends EspacioRepository {
     if (filters.categoria) where.categoria = filters.categoria;
     if (typeof filters.reservable === "boolean") where.reservable = filters.reservable;
 
-    const modelos = await this.EspacioModel.findAll({ where });
+    const modelos = await this.EspacioModel.findAll({
+      where,
+      include: [{ model: this.UsuarioEspacioModel }],
+    });
     return modelos.map((m) => this._toEntity(m));
   }
 

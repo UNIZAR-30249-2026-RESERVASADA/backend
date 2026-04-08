@@ -12,93 +12,115 @@ class ReservarEspacio {
     reservaRepository,
     edificioRepository,
     usuarioRepository,
+    departamentoRepository,
     reservaFactory,
     ReservaPolicy,
   }) {
-    this.espacioRepository  = espacioRepository;
-    this.reservaRepository  = reservaRepository;
-    this.edificioRepository = edificioRepository;
-    this.usuarioRepository  = usuarioRepository;
-    this.reservaFactory     = reservaFactory;
-    this.ReservaPolicy      = ReservaPolicy;
+    this.espacioRepository      = espacioRepository;
+    this.reservaRepository      = reservaRepository;
+    this.edificioRepository     = edificioRepository;
+    this.usuarioRepository      = usuarioRepository;
+    this.departamentoRepository = departamentoRepository;
+    this.reservaFactory         = reservaFactory;
+    this.ReservaPolicy          = ReservaPolicy;
   }
 
   async execute({
-    espacioId,
+    espacios,
     usuarioId,
     fecha,
     horaInicio,
     duracion,
-    numPersonas,
     tipoUso,
     descripcion,
   }) {
-    // 1. Verificar usuario y espacio existen
+    // 1. Verificar usuario
     const usuario = await this.usuarioRepository.findById(usuarioId);
     if (!usuario) throw domainError("El usuario no existe", 404);
     if (!usuario.rol) throw domainError("El usuario no tiene rol asignado", 400);
 
-    const espacio = await this.espacioRepository.findById(espacioId);
-    if (!espacio) throw domainError("El espacio no existe", 404);
-    if (!espacio.puedeReservarse()) throw domainError("El espacio no es reservable", 400);
+    // 2. Verificar que espacios es un array con al menos un elemento
+    if (!espacios || !Array.isArray(espacios) || espacios.length === 0) {
+      throw domainError("Debes seleccionar al menos un espacio", 400);
+    }
 
-    // 2. Validar que el edificio está abierto a la hora de la reserva
-    if (espacio.edificioId) {
-      const edificio = await this.edificioRepository.findById(espacio.edificioId);
-      if (edificio && !edificio.estaAbierto(horaInicio)) {
+    // 3. Cargar departamento del usuario (una sola vez)
+    const deptUsuario = usuario.departamentoId
+      ? await this.departamentoRepository.findById(usuario.departamentoId)
+      : null;
+
+    // 4. Verificar cada espacio — permisos, aforo, edificio y solapamientos
+    for (const { espacioId, numPersonas } of espacios) {
+      const espacio = await this.espacioRepository.findById(espacioId);
+      if (!espacio) throw domainError(`El espacio ${espacioId} no existe`, 404);
+      if (!espacio.puedeReservarse()) {
+        throw domainError(`El espacio ${espacio.nombre || espacioId} no es reservable`, 400);
+      }
+
+      // Validar edificio abierto
+      if (espacio.edificioId) {
+        const edificio = await this.edificioRepository.findById(espacio.edificioId);
+        if (edificio && !edificio.estaAbierto(horaInicio)) {
+          throw domainError(
+            `El edificio no está abierto a las ${horaInicio}. Horario: ${edificio.horarioApertura} - ${edificio.horarioCierre}`,
+            400
+          );
+        }
+      }
+
+      // Cargar departamento del espacio
+      const deptEspacio = espacio.departamentoId
+        ? await this.departamentoRepository.findById(espacio.departamentoId)
+        : null;
+
+      // Validar permisos — pasamos objetos Departamento a la policy
+      const puedeReservar = this.ReservaPolicy.puedeReservar(
+        usuario.rol,
+        espacio.categoria,
+        deptUsuario,
+        deptEspacio
+      );
+      if (!puedeReservar) {
         throw domainError(
-          `El edificio no está abierto a las ${horaInicio}. Horario: ${edificio.horarioApertura} - ${edificio.horarioCierre}`,
+          `Tu rol (${usuario.rol}) no permite reservar espacios de tipo ${espacio.categoria}`,
+          403
+        );
+      }
+
+      // Validar aforo individual del espacio (F5)
+      if (numPersonas != null && !espacio.admiteOcupacion(numPersonas)) {
+        throw domainError(
+          `El número de personas (${numPersonas}) supera el aforo del espacio ${espacio.nombre || espacioId} (${espacio.aforo})`,
+          400
+        );
+      }
+
+      // Validar solapamientos para este espacio
+      const reservasExistentes = await this.reservaRepository.findByEspacioYFecha(espacioId, fecha);
+      const solapadas = SolapamientoService.filtrarSolapadas(
+        { fecha, horaInicio, duracion: Number(duracion) },
+        reservasExistentes
+      );
+      if (solapadas.length > 0) {
+        throw domainError(
+          `El espacio ${espacio.nombre || espacioId} ya está reservado en esa franja horaria`,
           400
         );
       }
     }
 
-    // 3. Validar permisos
-    const puedeReservar = this.ReservaPolicy.puedeReservar(
-      usuario.rol,
-      espacio.categoria,
-      usuario.departamentoId,
-      espacio.departamentoId
-    );
-    if (!puedeReservar) {
-      throw domainError(
-        `Tu rol (${usuario.rol}) no permite reservar espacios de tipo ${espacio.categoria}`,
-        403
-      );
-    }
-
-    // 4. Construir la entidad mediante la factoría
-    // PeriodoTiempo valida fecha/horaInicio/duracion internamente
+    // 5. Crear reserva mediante la factoría
     const reserva = this.reservaFactory.crear({
-      espacioId,
+      espacios,
       usuarioId,
       fecha,
       horaInicio,
       duracion,
-      numPersonas: numPersonas || null,
       tipoUso,
       descripcion,
     });
 
-    // 5. Validar aforo
-    if (reserva.numPersonas !== null && !espacio.admiteOcupacion(reserva.numPersonas)) {
-      throw domainError(
-        `El número de personas (${reserva.numPersonas}) supera el aforo del espacio (${espacio.aforo})`,
-        400
-      );
-    }
-
-    // 6. Validar solapamientos
-    const reservasExistentes = await this.reservaRepository.findByEspacioYFecha(espacioId, fecha);
-    const solapadas = SolapamientoService.filtrarSolapadas(
-      { fecha, horaInicio, duracion: Number(duracion) },
-      reservasExistentes
-    );
-    if (solapadas.length > 0) {
-      throw domainError("Ya existe una reserva para ese espacio en esa franja horaria", 400);
-    }
-
-    // 7. Guardar
+    // 6. Guardar
     return await this.reservaRepository.save(reserva);
   }
 }

@@ -9,15 +9,6 @@ module.exports = (sequelize) => {
         primaryKey: true,
         autoIncrement: true,
       },
-      espacioId: {
-        type: DataTypes.BIGINT,
-        allowNull: false,
-        field: "espacio_id",
-        references: {
-          model: "espacios",
-          key: "gid",
-        },
-      },
       usuarioId: {
         type: DataTypes.BIGINT,
         allowNull: false,
@@ -30,20 +21,15 @@ module.exports = (sequelize) => {
       fecha: {
         type: DataTypes.DATEONLY,
         allowNull: false,
-      },      
+      },
       horaInicio: {
         type: DataTypes.TIME,
         allowNull: false,
         field: "hora_inicio",
       },
       duracion: {
-        type: DataTypes.INTEGER,    
-        allowNull: true,
-      },
-      numPersonas: {
         type: DataTypes.INTEGER,
         allowNull: true,
-        field: "num_personas",
       },
       tipoUso: {
         type: DataTypes.STRING,

@@ -8,40 +8,46 @@ const PeriodoTiempo = require("../value-objects/PeriodoTiempo");
  * - PeriodoTiempo (value object) — encapsula fecha, horaInicio y duracion
  *
  * Referencias indirectas a raíces de otros agregados:
- * - espacioId → raíz del agregado Espacio
- * - usuarioId → raíz del agregado Usuario
+ * - espacios   → lista de { espacioId, numPersonas } — raíces del agregado Espacio
+ * - usuarioId  → raíz del agregado Usuario
  *
  * Invariante de clase:
- * - espacioId y usuarioId nunca son null
+ * - espacios es un array con al menos un elemento
+ * - cada elemento de espacios tiene espacioId obligatorio y numPersonas opcional
+ * - usuarioId nunca es null
  * - estado es siempre uno de: "aceptada", "cancelada", "finalizada", "rechazada"
  * - _periodo es siempre un PeriodoTiempo válido
- * - numPersonas, si está definido, es un número entero positivo
  * - descripcion, si está definida, no supera 500 caracteres
  */
 class Reserva {
   constructor({
     id = null,
-    espacioId,
+    espacios,
     usuarioId,
     fecha,
     horaInicio,
     duracion,
-    numPersonas = null,
     tipoUso = null,
     descripcion = null,
     estado = "aceptada",
   }) {
-    // Precondición: espacioId y usuarioId son obligatorios
-    if (!espacioId) throw new Error("espacioId obligatorio");
+    // Precondición: espacios debe ser un array con al menos un elemento
+    if (!espacios || !Array.isArray(espacios) || espacios.length === 0) {
+      throw new Error("espacios debe ser un array con al menos un espacio");
+    }
+    for (const e of espacios) {
+      if (!e.espacioId) throw new Error("Cada espacio debe tener espacioId");
+      if (e.numPersonas !== null && e.numPersonas !== undefined) {
+        const n = Number(e.numPersonas);
+        if (Number.isNaN(n) || n <= 0) throw new Error("numPersonas debe ser mayor que 0");
+      }
+    }
+
+    // Precondición: usuarioId es obligatorio
     if (!usuarioId) throw new Error("usuarioId obligatorio");
 
     // PeriodoTiempo valida fecha, horaInicio y duracion internamente
     this._periodo = new PeriodoTiempo(fecha, horaInicio, duracion);
-
-    if (numPersonas !== null && numPersonas !== undefined) {
-      const n = Number(numPersonas);
-      if (Number.isNaN(n) || n <= 0) throw new Error("numPersonas debe ser mayor que 0");
-    }
 
     const TIPOS_USO_VALIDOS = ["docencia", "reunion", "examen", "otros"];
     if (tipoUso && !TIPOS_USO_VALIDOS.includes(tipoUso)) {
@@ -53,9 +59,11 @@ class Reserva {
     }
 
     this.id          = id;
-    this.espacioId   = espacioId;
+    this.espacios    = espacios.map((e) => ({
+      espacioId:   Number(e.espacioId),
+      numPersonas: e.numPersonas != null ? Number(e.numPersonas) : null,
+    }));
     this.usuarioId   = usuarioId;
-    this.numPersonas = numPersonas !== null && numPersonas !== undefined ? Number(numPersonas) : null;
     this.tipoUso     = tipoUso;
     this.descripcion = descripcion;
     this.estado      = estado;
@@ -66,6 +74,25 @@ class Reserva {
   get duracion()   { return this._periodo.duracion; }
   get horaFin()    { return this._periodo.horaFin; }
   get periodo()    { return this._periodo; }
+
+  /**
+   * Devuelve los ids de los espacios de la reserva.
+   * Función sin efectos secundarios.
+   * @returns {number[]}
+   */
+  get espacioIds() {
+    return this.espacios.map((e) => e.espacioId);
+  }
+
+  /**
+   * Comprueba si esta reserva incluye un espacio concreto.
+   * Función sin efectos secundarios.
+   * @param {number} espacioId
+   * @returns {boolean}
+   */
+  incluyeEspacio(espacioId) {
+    return this.espacios.some((e) => e.espacioId === Number(espacioId));
+  }
 
   /**
    * Comprueba si esta reserva se solapa con otra.

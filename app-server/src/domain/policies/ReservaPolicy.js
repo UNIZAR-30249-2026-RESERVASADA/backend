@@ -1,6 +1,5 @@
 const Rol              = require("../value-objects/Rol");
 const CategoriaReserva = require("../value-objects/CategoriaReserva");
-const Departamento     = require("../entities/Departamento");
 
 class ReservaPolicy {
   /**
@@ -10,19 +9,19 @@ class ReservaPolicy {
    *
    * @param {string|Rol} rolUsuario
    * @param {string|CategoriaReserva} categoriaEspacio
-   * @param {string|null} deptUsuarioId
-   * @param {string|null} deptEspacioId
+   * @param {Departamento|null} deptUsuario
+   * @param {Departamento|null} deptEspacio
    * @returns {boolean}
    */
-  static puedeReservar(rolUsuario, categoriaEspacio, deptUsuarioId = null, deptEspacioId = null) {
+  static puedeReservar(rolUsuario, categoriaEspacio, deptUsuario = null, deptEspacio = null) {
     if (!rolUsuario || !categoriaEspacio) return false;
 
     const rol      = rolUsuario      instanceof Rol              ? rolUsuario      : new Rol(rolUsuario);
     const categoria = categoriaEspacio instanceof CategoriaReserva ? categoriaEspacio : new CategoriaReserva(categoriaEspacio);
 
-    const mismoDepto = deptUsuarioId && deptEspacioId
-      ? new Departamento({ id: deptUsuarioId, nombre: "" })
-          .esMismoDepartamento(new Departamento({ id: deptEspacioId, nombre: "" }))
+    // Usa esMismoDepartamento() de la entidad Departamento
+    const mismoDepto = deptUsuario && deptEspacio
+      ? deptUsuario.esMismoDepartamento(deptEspacio)
       : false;
 
     if (rol.esGerente()) return true;
@@ -54,12 +53,6 @@ class ReservaPolicy {
     return false;
   }
 
-  /**
-   * Devuelve las categorías que el rol puede reservar sin restricción de departamento.
-   * Función sin efectos secundarios.
-   * @param {string} rolUsuario
-   * @returns {string[]}
-   */
   static categoriasLibres(rolUsuario) {
     const rol = new Rol(rolUsuario);
 
@@ -77,12 +70,6 @@ class ReservaPolicy {
     return [];
   }
 
-  /**
-   * Devuelve las categorías que requieren coincidir en departamento.
-   * Función sin efectos secundarios.
-   * @param {string} rolUsuario
-   * @returns {string[]}
-   */
   static categoriasConRestriccionDepartamento(rolUsuario) {
     const rol = new Rol(rolUsuario);
 
