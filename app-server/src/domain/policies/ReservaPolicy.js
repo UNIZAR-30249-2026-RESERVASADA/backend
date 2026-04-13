@@ -52,35 +52,6 @@ class ReservaPolicy {
 
     return false;
   }
-
-  static categoriasLibres(rolUsuario) {
-    const rol = new Rol(rolUsuario);
-
-    if (rol.esGerente())    return CategoriaReserva.VALORES;
-    if (rol.esEstudiante()) return ["sala comun"];
-
-    if (rol.esInvestigadorContratado() || rol.esDocenteInvestigador()) {
-      return ["aula", "seminario", "sala comun"];
-    }
-
-    if (rol.esTecnicoLaboratorio())    return ["seminario", "sala comun"];
-    if (rol.esConserje())              return ["aula", "seminario", "sala comun"];
-    if (rol.esInvestigadorVisitante()) return ["aula", "seminario", "sala comun"];
-
-    return [];
-  }
-
-  static categoriasConRestriccionDepartamento(rolUsuario) {
-    const rol = new Rol(rolUsuario);
-
-    if (rol.esInvestigadorContratado() || rol.esDocenteInvestigador()) {
-      return ["laboratorio", "despacho"];
-    }
-    if (rol.esTecnicoLaboratorio() || rol.esInvestigadorVisitante()) {
-      return ["laboratorio"];
-    }
-    return [];
-  }
 }
 
 module.exports = ReservaPolicy;

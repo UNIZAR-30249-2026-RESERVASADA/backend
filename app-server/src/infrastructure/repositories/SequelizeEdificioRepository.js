@@ -25,18 +25,6 @@ class SequelizeEdificioRepository extends EdificioRepository {
     const modelo = await this.EdificioModel.findByPk(id);
     return this._toEntity(modelo);
   }
-
-  async findAll() {
-    const modelos = await this.EdificioModel.findAll();
-    return modelos.map((m) => this._toEntity(m));
-  }
-
-  async findByIdEdificio(idEdificio) {
-    const modelo = await this.EdificioModel.findOne({
-      where: { id_edificio: idEdificio },
-    });
-    return this._toEntity(modelo);
-  }
 }
 
 module.exports = SequelizeEdificioRepository;

@@ -49,7 +49,7 @@ class ReservarEspacio {
       ? await this.departamentoRepository.findById(usuario.departamentoId)
       : null;
 
-    // 4. Verificar cada espacio — permisos, aforo, edificio y solapamientos
+    // 4. Verificar cada espacio — permisos, aforo y edificio
     for (const { espacioId, numPersonas } of espacios) {
       const espacio = await this.espacioRepository.findById(espacioId);
       if (!espacio) throw domainError(`El espacio ${espacioId} no existe`, 404);
@@ -73,7 +73,7 @@ class ReservarEspacio {
         ? await this.departamentoRepository.findById(espacio.departamentoId)
         : null;
 
-      // Validar permisos — pasamos objetos Departamento a la policy
+      // Validar permisos
       const puedeReservar = this.ReservaPolicy.puedeReservar(
         usuario.rol,
         espacio.categoria,
@@ -94,22 +94,10 @@ class ReservarEspacio {
           400
         );
       }
-
-      // Validar solapamientos para este espacio
-      const reservasExistentes = await this.reservaRepository.findByEspacioYFecha(espacioId, fecha);
-      const solapadas = SolapamientoService.filtrarSolapadas(
-        { fecha, horaInicio, duracion: Number(duracion) },
-        reservasExistentes
-      );
-      if (solapadas.length > 0) {
-        throw domainError(
-          `El espacio ${espacio.nombre || espacioId} ya está reservado en esa franja horaria`,
-          400
-        );
-      }
     }
 
-    // 5. Crear reserva mediante la factoría
+    // 5. Crear la reserva mediante la factoría
+    // Necesitamos la instancia de Reserva para pasársela al SolapamientoService
     const reserva = this.reservaFactory.crear({
       espacios,
       usuarioId,
@@ -120,7 +108,21 @@ class ReservarEspacio {
       descripcion,
     });
 
-    // 6. Guardar
+    // 6. Validar solapamientos para cada espacio usando SolapamientoService
+    // Ahora opera sobre instancias de Reserva, no sobre objetos planos
+    for (const { espacioId } of espacios) {
+      const espacio = await this.espacioRepository.findById(espacioId);
+      const reservasExistentes = await this.reservaRepository.findByEspacioYFecha(espacioId, fecha);
+      const solapadas = SolapamientoService.filtrarSolapadas(reserva, reservasExistentes);
+      if (solapadas.length > 0) {
+        throw domainError(
+          `El espacio ${espacio.nombre || espacioId} ya está reservado en esa franja horaria`,
+          400
+        );
+      }
+    }
+
+    // 7. Guardar
     return await this.reservaRepository.save(reserva);
   }
 }
