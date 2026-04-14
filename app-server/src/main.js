@@ -22,7 +22,8 @@ async function main() {
   await conectar();
   await connectRabbitMQ();
 
-  const espacioRepository      = new SequelizeEspacioRepository({ EspacioModel: Espacio, UsuarioEspacioModel: UsuarioEspacio });
+  const espacioRepository      = new SequelizeEspacioRepository({ EspacioModel: Espacio, UsuarioEspacioModel: UsuarioEspacio, 
+                                                                  UsuarioModel: Usuario });
   const reservaRepository      = new SequelizeReservaRepository({ ReservaModel: Reserva, ReservaEspacioModel: ReservaEspacio });
   const usuarioRepository      = new SequelizeUsuarioRepository({ UsuarioModel: Usuario });
   const edificioRepository     = new SequelizeEdificioRepository({ EdificioModel: Edificio });

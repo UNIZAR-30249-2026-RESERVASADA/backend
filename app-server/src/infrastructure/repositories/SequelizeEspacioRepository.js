@@ -2,10 +2,11 @@ const EspacioRepository = require("../../domain/repositories/EspacioRepository")
 const Espacio = require("../../domain/entities/Espacio");
 
 class SequelizeEspacioRepository extends EspacioRepository {
-  constructor({ EspacioModel, UsuarioEspacioModel }) {
+  constructor({ EspacioModel, UsuarioEspacioModel, UsuarioModel }) {
     super();
     this.EspacioModel        = EspacioModel;
     this.UsuarioEspacioModel = UsuarioEspacioModel;
+    this.UsuarioModel        = UsuarioModel;
   }
 
   _toEntity(modelo) {
@@ -54,18 +55,54 @@ class SequelizeEspacioRepository extends EspacioRepository {
   }
 
   async findAllMetadatos() {
+    const { Op } = require("sequelize");
+
+    // 1. Cargar espacios con sus relaciones de usuario
     const modelos = await this.EspacioModel.findAll({
-      attributes: ["gid", "id_espacio", "nombre", "categoria", "reservable", "aforo", "planta"],
+      attributes: [
+        "gid", "id_espacio", "nombre", "categoria",
+        "reservable", "aforo", "planta",
+        "departamentoId", "asignadoAEina",
+      ],
+      include: [{ model: this.UsuarioEspacioModel, attributes: ["usuarioId"] }],
       order: [["id_espacio", "ASC"]],
     });
+
+    // 2. Recoger todos los usuarioIds unicos
+    const todosLosIds = new Set();
+    for (const m of modelos) {
+      for (const ue of m.UsuarioEspacios ?? []) {
+        const uid = ue.usuarioId ?? ue.usuario_id;
+        if (uid) todosLosIds.add(Number(uid));
+      }
+    }
+
+    // 3. Cargar usuarios de una sola vez
+    const usuariosPorId = {};
+    if (todosLosIds.size > 0) {
+      const usuarios = await this.UsuarioModel.findAll({
+        where: { id: Array.from(todosLosIds) },
+        attributes: ["id", "nombre", "rol"],
+      });
+      for (const u of usuarios) usuariosPorId[Number(u.id)] = u;
+    }
+
+    // 4. Construir resultado
     return modelos.map((m) => ({
-      gid:        m.gid,
-      id_espacio: m.id_espacio,
-      nombre:     m.nombre,
-      categoria:  m.categoria,
-      reservable: m.reservable,
-      aforo:      m.aforo,
-      planta:     m.planta,
+      gid:            m.gid,
+      id_espacio:     m.id_espacio,
+      nombre:         m.nombre,
+      categoria:      m.categoria,
+      reservable:     m.reservable,
+      aforo:          m.aforo,
+      planta:         m.planta,
+      departamentoId: m.departamentoId ?? m.departamento_id ?? null,
+      asignadoAEina:  m.asignadoAEina  ?? false,
+      usuariosAsignados: (m.UsuarioEspacios ?? []).map((ue) => {
+        const uid = Number(ue.usuarioId ?? ue.usuario_id);
+        const u   = usuariosPorId[uid];
+        return { id: uid, nombre: u?.nombre ?? null, rol: u?.rol ?? null };
+      }),
     }));
   }
 
