@@ -80,6 +80,8 @@ Espacio.belongsToMany(Usuario, {
 });
 Espacio.hasMany(UsuarioEspacio, { foreignKey: "espacioId" });
 UsuarioEspacio.belongsTo(Espacio, { foreignKey: "espacioId" });
+UsuarioEspacio.belongsTo(Usuario, { foreignKey: "usuarioId" });
+Usuario.hasMany(UsuarioEspacio, { foreignKey: "usuarioId" });
 
 // ── Conexión ──────────────────────────────────────────────────
 

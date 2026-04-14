@@ -6,135 +6,121 @@ async function cargarAsignacionesEspacios({ Espacio, Usuario, Departamento, Usua
   // 1) Aulas y salas comunes -> SIEMPRE EINA
   const [nAulas] = await Espacio.update(
     { asignadoAEina: true, departamentoId: null },
-    {
-      where: {
-        categoria: ["Aula", "Sala común", "sala_comun", "aula"], // ajusta si tus categorías son otras
-      },
-    }
+    { where: { categoria: ["aula", "sala comun"] } }
   );
   console.log(`  · Aulas y salas comunes asignadas a EINA: ${nAulas}`);
 
   // 2) Obtener departamentos
-  const dInf = await Departamento.findOne({
-    where: { nombre: "Informática e Ingeniería de Sistemas" },
-  });
-  const dElec = await Departamento.findOne({
-    where: { nombre: "Ingeniería Electrónica y Comunicaciones" },
-  });
-  console.log("  · dInf =", dInf && dInf.id, " dElec =", dElec && dElec.id);
+  const dInf  = await Departamento.findOne({ where: { nombre: "Informática e Ingeniería de Sistemas" } });
+  const dElec = await Departamento.findOne({ where: { nombre: "Ingeniería Electrónica y Comunicaciones" } });
+  console.log("  · dInf =", dInf?.id, " dElec =", dElec?.id);
 
-  // 3) SALA INFORMÁTICA -> SIEMPRE departamento de Informática
+  // 3) SALA INFORMÁTICA -> departamento de Informática
   if (dInf) {
     const [nSalasInf] = await Espacio.update(
-      {
-        asignadoAEina: false,
-        departamentoId: dInf.id,
-      },
-      {
-        where: {
-          uso: { [Op.iLike]: "%SALA INFORMÁTICA%" },
-        },
-      }
+      { asignadoAEina: false, departamentoId: dInf.id },
+      { where: { uso: { [Op.iLike]: "%SALA INFORMÁTICA%" } } }
     );
-    console.log(`  · Espacios de uso SALA INFORMÁTICA asignados a INF: ${nSalasInf}`);
+    console.log(`  · Espacios SALA INFORMÁTICA asignados a INF: ${nSalasInf}`);
   }
 
-  // 4) SemINARIOS y LABORATORIOS (resto) -> algunos EINA, otros departamentos al azar
+  // 4) Seminarios y laboratorios -> repartir entre EINA, INF y ELEC
   const labsYSeminarios = await Espacio.findAll({
     where: {
-      categoria: ["Laboratorio", "laboratorio", "Seminario", "seminario"],
-      uso: { [Op.notILike]: "%SALA INFORMÁTICA%" }, // excluimos las salas informáticas que ya tratamos
+      categoria: ["laboratorio", "seminario"],
+      uso: { [Op.notILike]: "%SALA INFORMÁTICA%" },
     },
     order: [["gid", "ASC"]],
   });
-  console.log(`  · Labs/seminarios (no SALA INFORMÁTICA): ${labsYSeminarios.length}`);
+  console.log(`  · Labs/seminarios: ${labsYSeminarios.length}`);
 
-  for (const espacio of labsYSeminarios) {
-    // tiramos "moneda"
-    const r = Math.random();
-    if (r < 0.33) {
-      // 1/3 → EINA
+  for (let i = 0; i < labsYSeminarios.length; i++) {
+    const espacio = labsYSeminarios[i];
+    if (i % 3 === 0) {
       await espacio.update({ asignadoAEina: true, departamentoId: null });
-    } else if (r < 0.66 && dInf) {
-      // 1/3 → depto INF
+    } else if (i % 3 === 1 && dInf) {
       await espacio.update({ asignadoAEina: false, departamentoId: dInf.id });
     } else if (dElec) {
-      // 1/3 → depto ELEC
       await espacio.update({ asignadoAEina: false, departamentoId: dElec.id });
     }
   }
 
-  // 5) DESPACHOS → algunos personas, otros departamentos
-
-  // 5.a) Todos los despachos candidatos
+  // 5) Despachos — asignación determinista para cubrir todos los casos de O3 y O7
   const despachos = await Espacio.findAll({
-    where: {
-      categoria: ["Despacho", "despacho"],
-    },
+    where: { categoria: "despacho" },
     order: [["gid", "ASC"]],
   });
   console.log(`  · Despachos totales: ${despachos.length}`);
 
-  // usuarios válidos para asignar despachos (investigador_contratado o docente_investigador)
-  const usuariosAsignables = await Usuario.findAll({
-    where: {
-      rol: { [Op.in]: ["investigador_contratado", "docente_investigador"] },
-    },
-    order: [["id", "ASC"]],
-  });
-  console.log(`  · Usuarios asignables a despachos: ${usuariosAsignables.length}`);
+  // Obtener usuarios para asignaciones
+  const visitanteInf  = await Usuario.findOne({ where: { email: "visiting.inf@unizar.es" } });
+  const visitanteElec = await Usuario.findOne({ where: { email: "visiting.elec@unizar.es" } });
+  const docenteInf    = await Usuario.findOne({ where: { email: "ana.docente@unizar.es" } });
+  const docenteElec   = await Usuario.findOne({ where: { email: "luis.docente@unizar.es" } });
 
-  let idxUsuario = 0;
-  for (const despacho of despachos) {
-    const r = Math.random();
+  // Borrar asignaciones previas de despachos para evitar duplicados
+  const despachosGids = despachos.map((d) => d.gid);
+  if (despachosGids.length > 0) {
+    await UsuarioEspacio.destroy({ where: { espacioId: despachosGids } });
+  }
 
-    // Caso 1: asignar a PERSONA (solo si hay usuarios válidos)
-    if (r < 0.5 && usuariosAsignables.length > 0) {
-      const usuario = usuariosAsignables[idxUsuario % usuariosAsignables.length];
-      idxUsuario++;
+  for (let i = 0; i < despachos.length; i++) {
+    const despacho = despachos[i];
+    const caso     = i % 5;
 
-      // despacho asignado a persona -> ni EINA ni depto
-      await despacho.update({ asignadoAEina: false, departamentoId: null });
+    switch (caso) {
+      // CASO O3 — asignado a departamento INF
+      case 0:
+        if (dInf) {
+          await despacho.update({ asignadoAEina: false, departamentoId: dInf.id });
+          console.log(`    · [O3-INF] Despacho ${despacho.id_espacio || despacho.gid} → dpto INF`);
+        }
+        break;
 
-      await UsuarioEspacio.findOrCreate({
-        where: {
-          usuarioId: usuario.id,
-          espacioId: despacho.gid,
-        },
-      });
+      // CASO O3 — asignado a departamento ELEC
+      case 1:
+        if (dElec) {
+          await despacho.update({ asignadoAEina: false, departamentoId: dElec.id });
+          console.log(`    · [O3-ELEC] Despacho ${despacho.id_espacio || despacho.gid} → dpto ELEC`);
+        }
+        break;
 
-      console.log(
-        `    · Despacho ${despacho.id_espacio || despacho.gid} asignado a usuario ${usuario.email}`
-      );
-    } else {
-      // Caso 2: asignar a departamento (INF o ELEC) al azar
-      const hayInf = !!dInf;
-      const hayElec = !!dElec;
+      // CASO O7 — asignado a investigador visitante INF
+      case 2:
+        if (visitanteInf && dInf) {
+          await despacho.update({ asignadoAEina: false, departamentoId: dInf.id });
+          await UsuarioEspacio.findOrCreate({
+            where: { usuarioId: visitanteInf.id, espacioId: despacho.gid },
+          });
+          console.log(`    · [O7-INF] Despacho ${despacho.id_espacio || despacho.gid} → visitante INF`);
+        }
+        break;
 
-      let deptoId = null;
-      if (hayInf && hayElec) {
-        deptoId = Math.random() < 0.5 ? dInf.id : dElec.id;
-      } else if (hayInf) {
-        deptoId = dInf.id;
-      } else if (hayElec) {
-        deptoId = dElec.id;
-      }
+      // CASO O7 — asignado a investigador visitante ELEC
+      case 3:
+        if (visitanteElec && dElec) {
+          await despacho.update({ asignadoAEina: false, departamentoId: dElec.id });
+          await UsuarioEspacio.findOrCreate({
+            where: { usuarioId: visitanteElec.id, espacioId: despacho.gid },
+          });
+          console.log(`    · [O7-ELEC] Despacho ${despacho.id_espacio || despacho.gid} → visitante ELEC`);
+        }
+        break;
 
-      if (deptoId) {
-        await despacho.update({ asignadoAEina: false, departamentoId: deptoId });
-        console.log(
-          `    · Despacho ${despacho.id_espacio || despacho.gid} asignado a depto ${deptoId}`
-        );
-      } else {
-        // caso raro: no hay departamentos -> lo dejamos sin asignar
-        console.log(
-          `    · Despacho ${despacho.id_espacio || despacho.gid} sin depto porque no hay dInf/dElec`
-        );
-      }
+      // CASO bloqueado — asignado a docente (no visitante, no reservable por nadie salvo gerente)
+      case 4:
+        if (docenteInf) {
+          await despacho.update({ asignadoAEina: false, departamentoId: null });
+          await UsuarioEspacio.findOrCreate({
+            where: { usuarioId: docenteInf.id, espacioId: despacho.gid },
+          });
+          console.log(`    · [BLOQ] Despacho ${despacho.id_espacio || despacho.gid} → docente INF (no reservable)`);
+        }
+        break;
     }
   }
 
-  console.log("✓ Asignaciones de espacios iniciales creadas");
+  console.log("✓ Asignaciones de espacios creadas con todos los casos de prueba");
 }
 
 module.exports = cargarAsignacionesEspacios;

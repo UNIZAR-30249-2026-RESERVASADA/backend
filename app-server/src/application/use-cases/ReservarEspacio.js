@@ -73,12 +73,29 @@ class ReservarEspacio {
         ? await this.departamentoRepository.findById(espacio.departamentoId)
         : null;
 
-      // Validar permisos
+      // O7: el usuario actual está en la lista de asignados del espacio
+      const usuarioEstaAsignado = espacio.estaAsignadoA(usuario.id);
+
+      // O7: alguno de los usuarios asignados al espacio es investigador visitante
+      let espacioAsignadoAInvestigadorVisitante = false;
+      if (espacio.usuariosAsignados.length > 0) {
+        for (const uid of espacio.usuariosAsignados) {
+          const usuarioAsignado = await this.usuarioRepository.findById(uid);
+          if (usuarioAsignado?.rol === "investigador_visitante") {
+            espacioAsignadoAInvestigadorVisitante = true;
+            break;
+          }
+        }
+      }
+
+      // Validar permisos con todos los contextos necesarios
       const puedeReservar = this.ReservaPolicy.puedeReservar(
         usuario.rol,
         espacio.categoria,
         deptUsuario,
-        deptEspacio
+        deptEspacio,
+        usuarioEstaAsignado,
+        espacioAsignadoAInvestigadorVisitante
       );
       if (!puedeReservar) {
         throw domainError(
@@ -97,7 +114,6 @@ class ReservarEspacio {
     }
 
     // 5. Crear la reserva mediante la factoría
-    // Necesitamos la instancia de Reserva para pasársela al SolapamientoService
     const reserva = this.reservaFactory.crear({
       espacios,
       usuarioId,
@@ -109,7 +125,6 @@ class ReservarEspacio {
     });
 
     // 6. Validar solapamientos para cada espacio usando SolapamientoService
-    // Ahora opera sobre instancias de Reserva, no sobre objetos planos
     for (const { espacioId } of espacios) {
       const espacio = await this.espacioRepository.findById(espacioId);
       const reservasExistentes = await this.reservaRepository.findByEspacioYFecha(espacioId, fecha);
