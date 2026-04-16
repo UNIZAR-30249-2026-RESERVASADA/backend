@@ -6,6 +6,8 @@ async function startRequestConsumer({
   login,
   obtenerReservasUsuario,
   cancelarReservaPropia,
+  obtenerReservasVivas,
+  eliminarReserva,
 }) {
   const channel      = await getChannel();
   const requestQueue = process.env.REQUEST_QUEUE || "reservas.requests";
@@ -46,6 +48,16 @@ async function startRequestConsumer({
 
       else if (action === "cancelarReservaPropia") {
         const data = await cancelarReservaPropia.execute(payload);
+        response = { ok: true, data };
+      }
+
+      else if (action === "obtenerReservasVivas") {
+        const data = await obtenerReservasVivas.execute();
+        response = { ok: true, data };
+      }
+
+      else if (action === "eliminarReserva") {
+        const data = await eliminarReserva.execute(payload);
         response = { ok: true, data };
       }
 

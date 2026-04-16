@@ -1,7 +1,7 @@
-const express          = require("express");
+const express           = require("express");
 const reservaController = require("../controllers/reservasController");
-const authMiddleware   = require("../middlewares/authMiddleware");
-const validateDto      = require("../middlewares/validateDto");
+const authMiddleware    = require("../middlewares/authMiddleware");
+const validateDto       = require("../middlewares/validateDto");
 const { validateCreateReservaDto } = require("../dtos/createReservaDto");
 
 const router = express.Router();
@@ -55,6 +55,26 @@ router.get(
 
 /**
  * @swagger
+ * /api/reservas/vivas:
+ *   get:
+ *     summary: Obtener todas las reservas vivas del sistema (solo gerentes)
+ *     tags: [Reservas]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de todas las reservas activas del sistema
+ *       403:
+ *         description: Solo los gerentes pueden ver todas las reservas
+ */
+router.get(
+  "/reservas/vivas",
+  authMiddleware,
+  reservaController.getReservasVivas
+);
+
+/**
+ * @swagger
  * /api/reservas/{id}:
  *   delete:
  *     summary: Cancelar una reserva propia
@@ -79,6 +99,34 @@ router.delete(
   "/reservas/:id",
   authMiddleware,
   reservaController.cancelarReserva
+);
+
+/**
+ * @swagger
+ * /api/reservas/{id}/admin:
+ *   delete:
+ *     summary: Eliminar cualquier reserva (solo gerentes)
+ *     tags: [Reservas]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Reserva eliminada
+ *       403:
+ *         description: Solo los gerentes pueden eliminar cualquier reserva
+ *       404:
+ *         description: Reserva no encontrada
+ */
+router.delete(
+  "/reservas/:id/admin",
+  authMiddleware,
+  reservaController.eliminarReservaAdmin
 );
 
 module.exports = router;

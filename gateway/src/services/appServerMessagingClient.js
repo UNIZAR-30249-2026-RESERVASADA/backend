@@ -36,10 +36,22 @@ async function cancelarReservaPropia(reservaId, usuarioId) {
   return handleResponse(response, "Error cancelando la reserva");
 }
 
+async function obtenerReservasVivas() {
+  const response = await rpcCall(REQUEST_QUEUE, { action: "obtenerReservasVivas", payload: {} });
+  return handleResponse(response, "Error obteniendo reservas vivas");
+}
+
+async function eliminarReserva(reservaId, usuarioId, esGerente) {
+  const response = await rpcCall(REQUEST_QUEUE, { action: "eliminarReserva", payload: { reservaId, usuarioId, esGerente } });
+  return handleResponse(response, "Error eliminando la reserva");
+}
+
 module.exports = {
   crearReserva,
   obtenerMetadatosEspacios,
   login,
   obtenerReservasUsuario,
   cancelarReservaPropia,
+  obtenerReservasVivas,
+  eliminarReserva,
 };
