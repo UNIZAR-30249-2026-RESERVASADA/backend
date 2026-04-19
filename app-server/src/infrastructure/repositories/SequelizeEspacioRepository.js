@@ -60,7 +60,7 @@ class SequelizeEspacioRepository extends EspacioRepository {
     // 1. Cargar espacios con sus relaciones de usuario
     const modelos = await this.EspacioModel.findAll({
       attributes: [
-        "gid", "id_espacio", "nombre", "categoria",
+        "gid", "id_espacio", "nombre", "uso", "categoria",
         "reservable", "aforo", "planta",
         "departamentoId", "asignadoAEina",
       ],
@@ -92,6 +92,7 @@ class SequelizeEspacioRepository extends EspacioRepository {
       gid:            m.gid,
       id_espacio:     m.id_espacio,
       nombre:         m.nombre,
+      uso:            m.uso ?? null,
       categoria:      m.categoria,
       reservable:     m.reservable,
       aforo:          m.aforo,
@@ -128,6 +129,32 @@ class SequelizeEspacioRepository extends EspacioRepository {
     modelo.aforo = aforo;
     await modelo.save();
     return this._toEntity(modelo);
+  }
+
+  async updateAsignacion(id, { departamentoId, asignadoAEina, usuariosAsignados }) {
+    const modelo = await this.EspacioModel.findByPk(id);
+    if (!modelo) return null;
+
+    // Actualizar campos de asignación en el espacio
+    modelo.departamentoId = departamentoId ?? null;
+    modelo.asignadoAEina  = asignadoAEina  ?? false;
+    await modelo.save();
+
+    // Actualizar usuarios asignados — borrar los anteriores y crear los nuevos
+    await this.UsuarioEspacioModel.destroy({ where: { espacioId: id } });
+    if (usuariosAsignados && usuariosAsignados.length > 0) {
+      await Promise.all(
+        usuariosAsignados.map((uid) =>
+          this.UsuarioEspacioModel.findOrCreate({
+            where: { usuarioId: uid, espacioId: id },
+          })
+        )
+      );
+    }
+
+    return this._toEntity(await this.EspacioModel.findByPk(id, {
+      include: [{ model: this.UsuarioEspacioModel }],
+    }));
   }
 }
 

@@ -22,6 +22,10 @@ class EspacioRepository {
   async updateAforo(_id, _aforo) {
     throw new Error("Método updateAforo() no implementado");
   }
+
+  async updateAsignacion(_id, _asignacion) {
+    throw new Error("Método updateAsignacion() no implementado");
+  }
 }
 
 module.exports = EspacioRepository;

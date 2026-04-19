@@ -21,6 +21,11 @@ async function obtenerMetadatosEspacios() {
   return handleResponse(response, "Error obteniendo metadatos de espacios");
 }
 
+async function modificarEspacio(espacioId, cambios, esGerente) {
+  const response = await rpcCall(REQUEST_QUEUE, { action: "modificarEspacio", payload: { espacioId, cambios, esGerente } });
+  return handleResponse(response, "Error modificando el espacio");
+}
+
 async function login(email, password) {
   const response = await rpcCall(REQUEST_QUEUE, { action: "login", payload: { email, password } });
   return handleResponse(response, "Error en login");
@@ -47,6 +52,7 @@ async function eliminarReserva(reservaId, usuarioId, esGerente) {
 }
 
 module.exports = {
+  modificarEspacio,
   crearReserva,
   obtenerMetadatosEspacios,
   login,

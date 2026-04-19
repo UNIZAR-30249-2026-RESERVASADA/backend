@@ -8,6 +8,7 @@ async function startRequestConsumer({
   cancelarReservaPropia,
   obtenerReservasVivas,
   eliminarReserva,
+  modificarEspacio,
 }) {
   const channel      = await getChannel();
   const requestQueue = process.env.REQUEST_QUEUE || "reservas.requests";
@@ -58,6 +59,11 @@ async function startRequestConsumer({
 
       else if (action === "eliminarReserva") {
         const data = await eliminarReserva.execute(payload);
+        response = { ok: true, data };
+      }
+
+      else if (action === "modificarEspacio") {
+        const data = await modificarEspacio.execute(payload);
         response = { ok: true, data };
       }
 
