@@ -50,8 +50,8 @@ async function main() {
   const cancelarReservaPropia  = new CancelarReservaPropia({ reservaRepository });
   const obtenerReservasVivas   = new ObtenerReservasVivas({ reservaRepository });
   const eliminarReserva        = new EliminarReserva({ reservaRepository });
-  const modificarEspacio       = new ModificarEspacio({ espacioRepository, usuarioRepository });
-
+  const modificarEspacio       = new ModificarEspacio({ espacioRepository, usuarioRepository, reservaRepository });
+  
   await startRequestConsumer({
     reservarEspacio,
     getEspaciosMetadatos,

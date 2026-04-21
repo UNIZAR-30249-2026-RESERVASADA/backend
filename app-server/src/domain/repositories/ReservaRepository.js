@@ -19,6 +19,10 @@ class ReservaRepository {
     throw new Error("Método findVivas() no implementado");
   }
 
+  async findVivasPorEspacio(_espacioId) {
+    throw new Error("Método findVivasPorEspacio() no implementado");
+  }
+
   async deleteById(_id) {
     throw new Error("Método deleteById() no implementado");
   }

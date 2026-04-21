@@ -137,6 +137,36 @@ class SequelizeReservaRepository extends ReservaRepository {
     });
   }
 
+  async findVivasPorEspacio(espacioId) {
+    const ahora     = new Date();
+    const fechaHoy  = ahora.toISOString().split("T")[0];
+    const horaAhora = ahora.toTimeString().slice(0, 5);
+
+    const reservaEspacios = await this.ReservaEspacioModel.findAll({ where: { espacioId } });
+    const reservaIds = reservaEspacios.map(re => re.reservaId);
+    if (reservaIds.length === 0) return [];
+
+    const modelos = await this.ReservaModel.findAll({
+      where: {
+        id:     { [Op.in]: reservaIds },
+        estado: "aceptada",
+        [Op.or]: [
+          { fecha: { [Op.gt]: fechaHoy } },
+          { fecha: fechaHoy },
+        ],
+      },
+      include: [{ model: this.ReservaEspacioModel }],
+      order: [["fecha", "ASC"], ["horaInicio", "ASC"]],
+    });
+
+    const entidades = modelos.map(m => this._toEntity(m));
+    return entidades.filter(r => {
+      if (r.fecha > fechaHoy) return true;
+      if (r.fecha < fechaHoy) return false;
+      return r.horaFin > horaAhora;
+    });
+  }
+
   async deleteById(id) {
     const modelo = await this.ReservaModel.findByPk(id, {
       include: [{ model: this.ReservaEspacioModel }],
