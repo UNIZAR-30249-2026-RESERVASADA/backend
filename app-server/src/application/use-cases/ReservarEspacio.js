@@ -57,15 +57,37 @@ class ReservarEspacio {
         throw domainError(`El espacio ${espacio.nombre || espacioId} no es reservable`, 400);
       }
 
-      // Validar edificio abierto
-      if (espacio.edificioId) {
+      // Validar horario efectivo del espacio (propio o heredado del edificio)
+      let horarioApertura = espacio.horarioApertura ?? null;
+      let horarioCierre   = espacio.horarioCierre   ?? null;
+
+      if (espacio.edificioId && (!horarioApertura || !horarioCierre)) {
         const edificio = await this.edificioRepository.findById(espacio.edificioId);
-        if (edificio && !edificio.estaAbierto(horaInicio)) {
-          throw domainError(
-            `El edificio no está abierto a las ${horaInicio}. Horario: ${edificio.horarioApertura} - ${edificio.horarioCierre}`,
-            400
-          );
+        if (edificio) {
+          horarioApertura = horarioApertura ?? edificio.horarioApertura;
+          horarioCierre   = horarioCierre   ?? edificio.horarioCierre;
         }
+      }
+
+      if (horarioApertura && horaInicio < horarioApertura) {
+        throw domainError(
+          `El espacio ${espacio.nombre || espacioId} no está disponible a las ${horaInicio}. ` +
+          `Horario de apertura: ${horarioApertura}`,
+          400
+        );
+      }
+
+      // Calcular horaFin para validar cierre
+      const [hI, mI]    = horaInicio.split(":").map(Number);
+      const totalMin     = hI * 60 + mI + duracion;
+      const horaFinStr   = `${String(Math.floor(totalMin / 60) % 24).padStart(2, "0")}:${String(totalMin % 60).padStart(2, "0")}`;
+
+      if (horarioCierre && horaFinStr > horarioCierre) {
+        throw domainError(
+          `La reserva del espacio ${espacio.nombre || espacioId} termina a las ${horaFinStr}, ` +
+          `fuera de su horario de cierre (${horarioCierre})`,
+          400
+        );
       }
 
       // Cargar departamento del espacio
