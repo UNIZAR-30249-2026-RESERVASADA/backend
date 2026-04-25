@@ -1,5 +1,3 @@
-const ReservaPolicy = require("../policies/ReservaPolicy");
-
 /**
  * @service InvalidacionReservasService
  *
@@ -35,8 +33,11 @@ class InvalidacionReservasService {
     nuevaCategoria,
     deptEspacioId,
     asignadoAInvVisitante,
+    nuevoHorarioApertura,
+    nuevoHorarioCierre,
     reservaRepository,
     usuarioRepository,
+    ReservaPolicy,
   }) {
     const reservasVivas = await reservaRepository.findVivasPorEspacio(espacioId);
     if (reservasVivas.length === 0) return [];
@@ -60,7 +61,23 @@ class InvalidacionReservasService {
         continue;
       }
 
-      // Caso 2 — comprobar si el usuario sigue pudiendo reservar con la nueva categoría
+      // Caso 2 — comprobar si la reserva queda fuera del nuevo horario del espacio
+      if (nuevoHorarioApertura || nuevoHorarioCierre) {
+        const apertura = nuevoHorarioApertura;
+        const cierre   = nuevoHorarioCierre;
+        const fueraDeHorario =
+          (apertura && reserva.horaInicio < apertura) ||
+          (cierre   && reserva.horaFin    > cierre);
+
+        if (fueraDeHorario) {
+          reserva.cancelar();
+          await reservaRepository.save(reserva);
+          canceladas.push(reserva.id);
+          continue;
+        }
+      }
+
+      // Caso 3 — comprobar si el usuario sigue pudiendo reservar con la nueva categoría
       const usuario = await usuarioRepository.findById(reserva.usuarioId);
       if (!usuario) continue;
 

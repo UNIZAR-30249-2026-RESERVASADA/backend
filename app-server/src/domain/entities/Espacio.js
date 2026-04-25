@@ -20,6 +20,7 @@ const CATEGORIAS_RESERVABLES = ["aula", "seminario", "laboratorio", "despacho", 
  * - _categoria es un CategoriaReserva válido o null si la categoría no es reservable
  * - aforo, si está definido, es un número no negativo
  * - usuariosAsignados es siempre un array (puede estar vacío)
+ * - horarioApertura y horarioCierre son null si el espacio hereda el horario del edificio
  */
 class Espacio {
   constructor({
@@ -38,6 +39,8 @@ class Espacio {
     departamentoId    = null,
     edificioId        = null,
     usuariosAsignados = [],
+    horarioApertura   = null,
+    horarioCierre     = null,
   }) {
     this._categoriaRaw = categoria || null;
 
@@ -60,6 +63,8 @@ class Espacio {
     this.departamentoId    = departamentoId;
     this.edificioId        = edificioId;
     this.usuariosAsignados = Array.isArray(usuariosAsignados) ? usuariosAsignados : [];
+    this.horarioApertura   = horarioApertura || null;
+    this.horarioCierre     = horarioCierre   || null;
   }
 
   get categoria() {
@@ -113,6 +118,28 @@ class Espacio {
    */
   estaAsignadoA(usuarioId) {
     return this.usuariosAsignados.some((id) => String(id) === String(usuarioId));
+  }
+
+  /**
+   * Devuelve el horario efectivo del espacio.
+   * Si el espacio tiene horario propio lo usa, si no hereda el del edificio.
+   * Función sin efectos secundarios.
+   * @param {{ horarioApertura: string|null, horarioCierre: string|null }|null} edificio
+   * @returns {{ apertura: string|null, cierre: string|null }}
+   */
+  getHorarioEfectivo(edificio = null) {
+    const apertura = this.horarioApertura ?? edificio?.horarioApertura ?? null;
+    const cierre   = this.horarioCierre   ?? edificio?.horarioCierre   ?? null;
+    return { apertura, cierre };
+  }
+
+  /**
+   * Comprueba si el espacio tiene horario propio definido.
+   * Función sin efectos secundarios.
+   * @returns {boolean}
+   */
+  tieneHorarioPropio() {
+    return this.horarioApertura !== null || this.horarioCierre !== null;
   }
 }
 

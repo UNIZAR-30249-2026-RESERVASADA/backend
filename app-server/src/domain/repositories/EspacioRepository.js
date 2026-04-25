@@ -26,6 +26,10 @@ class EspacioRepository {
   async updateAsignacion(_id, _asignacion) {
     throw new Error("Método updateAsignacion() no implementado");
   }
+
+  async updateHorario(_id, _horarioApertura, _horarioCierre) {
+    throw new Error("Método updateHorario() no implementado");
+  }
 }
 
 module.exports = EspacioRepository;

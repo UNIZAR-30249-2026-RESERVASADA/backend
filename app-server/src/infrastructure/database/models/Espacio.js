@@ -58,6 +58,16 @@ module.exports = (sequelize) => {
         key: "id",
       },
     },
+    horarioApertura: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: 'Horario de apertura propio del espacio. Si es null hereda el del edificio.',
+    },
+    horarioCierre: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: 'Horario de cierre propio del espacio. Si es null hereda el del edificio.',
+    },
     geom: {
       type: DataTypes.GEOMETRY('MULTIPOLYGON', 4326),
     }

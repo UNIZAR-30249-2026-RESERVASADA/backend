@@ -2,11 +2,12 @@ const EspacioRepository = require("../../domain/repositories/EspacioRepository")
 const Espacio = require("../../domain/entities/Espacio");
 
 class SequelizeEspacioRepository extends EspacioRepository {
-  constructor({ EspacioModel, UsuarioEspacioModel, UsuarioModel }) {
+  constructor({ EspacioModel, UsuarioEspacioModel, UsuarioModel, EdificioModel }) {
     super();
     this.EspacioModel        = EspacioModel;
     this.UsuarioEspacioModel = UsuarioEspacioModel;
     this.UsuarioModel        = UsuarioModel;
+    this.EdificioModel       = EdificioModel;
   }
 
   _toEntity(modelo) {
@@ -27,9 +28,11 @@ class SequelizeEspacioRepository extends EspacioRepository {
       reservable:        modelo.reservable,
       aforo:             modelo.aforo,
       geom:              modelo.geom,
-      asignadoAEina:     modelo.asignadoAEina ?? false,
-      departamentoId:    modelo.departamento_id ?? modelo.departamentoId ?? null,
-      edificioId:        modelo.edificio_id    ?? modelo.edificioId     ?? null,
+      asignadoAEina:     modelo.asignadoAEina   ?? false,
+      departamentoId:    modelo.departamento_id  ?? modelo.departamentoId ?? null,
+      edificioId:        modelo.edificio_id      ?? modelo.edificioId     ?? null,
+      horarioApertura:   modelo.horarioApertura  ?? null,
+      horarioCierre:     modelo.horarioCierre    ?? null,
       usuariosAsignados,
     });
   }
@@ -63,10 +66,16 @@ class SequelizeEspacioRepository extends EspacioRepository {
         "gid", "id_espacio", "nombre", "uso", "categoria",
         "reservable", "aforo", "planta",
         "departamentoId", "asignadoAEina",
+        "horarioApertura", "horarioCierre", "edificioId",
       ],
-      include: [{ model: this.UsuarioEspacioModel, attributes: ["usuarioId"] }],
+      include: [
+        { model: this.UsuarioEspacioModel, attributes: ["usuarioId"] },
+        ...(this.EdificioModel ? [{ model: this.EdificioModel, attributes: ["nombre", "horarioApertura", "horarioCierre"] }] : []),
+      ],
       order: [["id_espacio", "ASC"]],
     });
+
+    console.log("Edificio primer espacio:", JSON.stringify(modelos[0]?.Edificio ?? "NO VIENE"));
 
     // 2. Recoger todos los usuarioIds unicos
     const todosLosIds = new Set();
@@ -99,6 +108,11 @@ class SequelizeEspacioRepository extends EspacioRepository {
       planta:         m.planta,
       departamentoId: m.departamentoId ?? m.departamento_id ?? null,
       asignadoAEina:  m.asignadoAEina  ?? false,
+      horarioApertura: m.horarioApertura ?? null,
+      horarioCierre:   m.horarioCierre   ?? null,
+      edificioNombre:  m.Edificio?.nombre ?? null,
+      edificioHorarioApertura: m.Edificio?.horarioApertura ?? null,
+      edificioHorarioCierre:   m.Edificio?.horarioCierre   ?? null,
       usuariosAsignados: (m.UsuarioEspacios ?? []).map((ue) => {
         const uid = Number(ue.usuarioId ?? ue.usuario_id);
         const u   = usuariosPorId[uid];
@@ -127,6 +141,15 @@ class SequelizeEspacioRepository extends EspacioRepository {
     const modelo = await this.EspacioModel.findByPk(id);
     if (!modelo) return null;
     modelo.aforo = aforo;
+    await modelo.save();
+    return this._toEntity(modelo);
+  }
+
+  async updateHorario(id, horarioApertura, horarioCierre) {
+    const modelo = await this.EspacioModel.findByPk(id);
+    if (!modelo) return null;
+    modelo.horarioApertura = horarioApertura ?? null;
+    modelo.horarioCierre   = horarioCierre   ?? null;
     await modelo.save();
     return this._toEntity(modelo);
   }

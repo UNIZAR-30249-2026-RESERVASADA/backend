@@ -1,5 +1,6 @@
 const CategoriaReserva           = require("../../domain/value-objects/CategoriaReserva");
 const InvalidacionReservasService = require("../../domain/services/InvalidacionReservasService");
+const ReservaPolicy               = require("../../domain/policies/ReservaPolicy");
 
 function domainError(message, statusCode) {
   const error = new Error(message);
@@ -26,8 +27,6 @@ class ModificarEspacio {
   }
 
   async execute({ espacioId, cambios, esGerente }) {
-    console.log("reservaRepository:", this.reservaRepository);
-    console.log("invalidacionService:", this.invalidacionService);
     if (!esGerente) throw domainError("Solo los gerentes pueden modificar espacios", 403);
     if (!espacioId) throw domainError("espacioId es obligatorio", 400);
     if (!cambios || Object.keys(cambios).length === 0) {
@@ -37,7 +36,7 @@ class ModificarEspacio {
     const espacio = await this.espacioRepository.findById(espacioId);
     if (!espacio) throw domainError(`Espacio ${espacioId} no encontrado`, 404);
 
-    const { reservable, categoria, aforo, departamentoId, asignadoAEina, usuariosAsignados } = cambios;
+    const { reservable, categoria, aforo, departamentoId, asignadoAEina, usuariosAsignados, horarioApertura, horarioCierre } = cambios;
 
     // --- VALIDACIONES DE DOMINIO ---
 
@@ -65,6 +64,25 @@ class ModificarEspacio {
     // Validar aforo
     if (aforo !== undefined && (isNaN(Number(aforo)) || Number(aforo) < 0)) {
       throw domainError("El aforo debe ser un número positivo", 400);
+    }
+
+    // Validar horario si se cambia
+    const HORA_REGEX = /^([01][0-9]|2[0-3]):[0-5][0-9]$/;
+    if (horarioApertura !== undefined && horarioApertura !== null && !HORA_REGEX.test(horarioApertura)) {
+      throw domainError("Formato de hora de apertura inválido. Usa HH:MM", 400);
+    }
+    if (horarioCierre !== undefined && horarioCierre !== null && !HORA_REGEX.test(horarioCierre)) {
+      throw domainError("Formato de hora de cierre inválido. Usa HH:MM", 400);
+    }
+    // Si se manda uno hay que mandar los dos
+    if (horarioApertura !== undefined && horarioCierre === undefined) {
+      throw domainError("Si cambias la hora de apertura debes indicar también la hora de cierre", 400);
+    }
+    if (horarioCierre !== undefined && horarioApertura === undefined) {
+      throw domainError("Si cambias la hora de cierre debes indicar también la hora de apertura", 400);
+    }
+    if (horarioApertura && horarioCierre && horarioApertura >= horarioCierre) {
+      throw domainError("La hora de apertura debe ser anterior a la de cierre", 400);
     }
 
     // Validar asignación
@@ -115,6 +133,13 @@ class ModificarEspacio {
     if (reservable  !== undefined) await this.espacioRepository.updateReservable(espacioId, reservable);
     if (categoria   !== undefined) await this.espacioRepository.updateCategoria(espacioId, categoria);
     if (aforo       !== undefined) await this.espacioRepository.updateAforo(espacioId, Number(aforo));
+    if (horarioApertura !== undefined || horarioCierre !== undefined) {
+      await this.espacioRepository.updateHorario(
+        espacioId,
+        horarioApertura !== undefined ? horarioApertura : espacio.horarioApertura,
+        horarioCierre   !== undefined ? horarioCierre   : espacio.horarioCierre
+      );
+    }
     if (departamentoId !== undefined || asignadoAEina !== undefined || usuariosAsignados !== undefined) {
       await this.espacioRepository.updateAsignacion(espacioId, {
         departamentoId:    departamentoId    ?? null,
@@ -125,11 +150,12 @@ class ModificarEspacio {
 
     // --- INVALIDAR RESERVAS AFECTADAS (requisito I) ---
     // Solo si cambia reservable o categoría hay que revisar las reservas existentes
-    const nuevaReservable = reservable !== undefined ? reservable : espacio.reservable;
-    const nuevaCategoria  = categoria  !== undefined ? categoria  : espacio.categoria;
+    const nuevaReservable       = reservable       !== undefined ? reservable       : espacio.reservable;
+    const nuevaCategoria        = categoria        !== undefined ? categoria        : espacio.categoria;
+    const nuevoHorarioApertura  = horarioApertura  !== undefined ? horarioApertura  : espacio.horarioApertura;
+    const nuevoHorarioCierre    = horarioCierre    !== undefined ? horarioCierre    : espacio.horarioCierre;
 
     // Calcular si el espacio actualizado está asignado a investigador visitante
-    // (necesario para ReservaPolicy en despachos O7)
     const espacioActualizado = await this.espacioRepository.findById(espacioId);
     const asignadoAInvVisitante = (espacioActualizado.usuariosAsignados || [])
       .some(u => u.rol === "investigador_visitante");
@@ -140,8 +166,11 @@ class ModificarEspacio {
       nuevaCategoria,
       deptEspacioId:        espacioActualizado.departamentoId ?? null,
       asignadoAInvVisitante,
+      nuevoHorarioApertura,
+      nuevoHorarioCierre,
       reservaRepository:    this.reservaRepository,
       usuarioRepository:    this.usuarioRepository,
+      ReservaPolicy,
     });
 
     // --- DEVOLVER ESPACIO ACTUALIZADO ---

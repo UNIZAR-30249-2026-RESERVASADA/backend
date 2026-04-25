@@ -17,7 +17,11 @@ class GetEspaciosMetadatos {
       departamentoId:        espacio.departamentoId,
       asignadoAEina:         espacio.asignadoAEina,
       usuariosAsignados:      espacio.usuariosAsignados ?? [],
-      ocupado:               false,
+      horarioApertura:          espacio.horarioApertura          ?? null,
+      horarioCierre:            espacio.horarioCierre             ?? null,
+      edificioNombre:           espacio.edificioNombre            ?? null,
+      edificioHorarioApertura:  espacio.edificioHorarioApertura   ?? null,
+      edificioHorarioCierre:    espacio.edificioHorarioCierre     ?? null,
     }));
   }
 }
