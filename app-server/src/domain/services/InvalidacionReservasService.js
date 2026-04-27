@@ -35,6 +35,8 @@ class InvalidacionReservasService {
     asignadoAInvVisitante,
     nuevoHorarioApertura,
     nuevoHorarioCierre,
+    nuevoPorcentaje,
+    aforo,
     reservaRepository,
     usuarioRepository,
     ReservaPolicy,
@@ -61,7 +63,21 @@ class InvalidacionReservasService {
         continue;
       }
 
-      // Caso 2 — comprobar si la reserva queda fuera del nuevo horario del espacio
+      // Caso 2 — comprobar si la reserva ya no cumple el nuevo porcentaje de ocupación
+      if (nuevoPorcentaje !== null && nuevoPorcentaje !== undefined && aforo) {
+        const aforoPermitido = Math.floor(aforo * (nuevoPorcentaje / 100));
+        // Sumar numPersonas de todos los espacios de la reserva para este espacioId
+        const espacioReserva = reserva.espacios.find(e => Number(e.espacioId) === Number(espacioId));
+        const numPersonas    = espacioReserva?.numPersonas ?? null;
+        if (numPersonas !== null && numPersonas > aforoPermitido) {
+          reserva.cancelar();
+          await reservaRepository.save(reserva);
+          canceladas.push(reserva.id);
+          continue;
+        }
+      }
+
+      // Caso 3 — comprobar si la reserva queda fuera del nuevo horario del espacio
       if (nuevoHorarioApertura || nuevoHorarioCierre) {
         const apertura = nuevoHorarioApertura;
         const cierre   = nuevoHorarioCierre;
@@ -77,7 +93,7 @@ class InvalidacionReservasService {
         }
       }
 
-      // Caso 3 — comprobar si el usuario sigue pudiendo reservar con la nueva categoría
+      // Caso 4 — comprobar si el usuario sigue pudiendo reservar con la nueva categoría
       const usuario = await usuarioRepository.findById(reserva.usuarioId);
       if (!usuario) continue;
 

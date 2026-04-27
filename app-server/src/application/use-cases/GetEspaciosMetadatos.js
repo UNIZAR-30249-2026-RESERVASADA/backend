@@ -17,6 +17,8 @@ class GetEspaciosMetadatos {
       departamentoId:        espacio.departamentoId,
       asignadoAEina:         espacio.asignadoAEina,
       usuariosAsignados:      espacio.usuariosAsignados ?? [],
+      porcentajeOcupacion:      espacio.porcentajeOcupacion      ?? null,
+      edificioPorcentaje:       espacio.edificioPorcentaje       ?? null,
       horarioApertura:          espacio.horarioApertura          ?? null,
       horarioCierre:            espacio.horarioCierre             ?? null,
       edificioNombre:           espacio.edificioNombre            ?? null,

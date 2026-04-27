@@ -17,6 +17,7 @@ const CancelarReservaPropia  = require("./application/use-cases/CancelarReservaP
 const ObtenerReservasVivas   = require("./application/use-cases/ObtenerReservasVivas");
 const EliminarReserva        = require("./application/use-cases/EliminarReserva");
 const ModificarEspacio       = require("./application/use-cases/ModificarEspacio");
+const ModificarEdificio      = require("./application/use-cases/ModificarEdificio");
 
 const ReservaPolicy  = require("./domain/policies/ReservaPolicy");
 const ReservaFactory = require("./domain/factories/ReservaFactory");
@@ -51,6 +52,7 @@ async function main() {
   const obtenerReservasVivas   = new ObtenerReservasVivas({ reservaRepository });
   const eliminarReserva        = new EliminarReserva({ reservaRepository });
   const modificarEspacio       = new ModificarEspacio({ espacioRepository, usuarioRepository, reservaRepository });
+  const modificarEdificio      = new ModificarEdificio({ edificioRepository, espacioRepository, reservaRepository, usuarioRepository });
 
   await startRequestConsumer({
     reservarEspacio,
@@ -61,6 +63,7 @@ async function main() {
     obtenerReservasVivas,
     eliminarReserva,
     modificarEspacio,
+    modificarEdificio,
   });
 
   console.log("App-server listo y esperando mensajes...");

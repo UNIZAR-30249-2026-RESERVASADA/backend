@@ -58,6 +58,11 @@ module.exports = (sequelize) => {
         key: "id",
       },
     },
+    porcentajeOcupacion: {
+      type: DataTypes.FLOAT,
+      allowNull: true,
+      comment: 'Porcentaje de ocupación máximo propio del espacio. Si es null hereda el del edificio.',
+    },
     horarioApertura: {
       type: DataTypes.STRING,
       allowNull: true,

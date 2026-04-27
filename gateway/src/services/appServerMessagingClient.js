@@ -26,6 +26,11 @@ async function modificarEspacio(espacioId, cambios, esGerente) {
   return handleResponse(response, "Error modificando el espacio");
 }
 
+async function modificarEdificio(edificioId, cambios, afectarTodos, esGerente) {
+  const response = await rpcCall(REQUEST_QUEUE, { action: "modificarEdificio", payload: { edificioId, cambios, afectarTodos, esGerente } });
+  return handleResponse(response, "Error modificando el edificio");
+}
+
 async function login(email, password) {
   const response = await rpcCall(REQUEST_QUEUE, { action: "login", payload: { email, password } });
   return handleResponse(response, "Error en login");
@@ -53,6 +58,7 @@ async function eliminarReserva(reservaId, usuarioId, esGerente) {
 
 module.exports = {
   modificarEspacio,
+  modificarEdificio,
   crearReserva,
   obtenerMetadatosEspacios,
   login,

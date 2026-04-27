@@ -36,7 +36,7 @@ class ModificarEspacio {
     const espacio = await this.espacioRepository.findById(espacioId);
     if (!espacio) throw domainError(`Espacio ${espacioId} no encontrado`, 404);
 
-    const { reservable, categoria, aforo, departamentoId, asignadoAEina, usuariosAsignados, horarioApertura, horarioCierre } = cambios;
+    const { reservable, categoria, aforo, departamentoId, asignadoAEina, usuariosAsignados, horarioApertura, horarioCierre, porcentajeOcupacion } = cambios;
 
     // --- VALIDACIONES DE DOMINIO ---
 
@@ -64,6 +64,14 @@ class ModificarEspacio {
     // Validar aforo
     if (aforo !== undefined && (isNaN(Number(aforo)) || Number(aforo) < 0)) {
       throw domainError("El aforo debe ser un número positivo", 400);
+    }
+
+    // Validar porcentaje de ocupación si se cambia
+    if (porcentajeOcupacion !== undefined && porcentajeOcupacion !== null) {
+      const pct = Number(porcentajeOcupacion);
+      if (isNaN(pct) || pct < 0 || pct > 100) {
+        throw domainError("El porcentaje de ocupación debe ser un número entre 0 y 100", 400);
+      }
     }
 
     // Validar horario si se cambia
@@ -133,6 +141,9 @@ class ModificarEspacio {
     if (reservable  !== undefined) await this.espacioRepository.updateReservable(espacioId, reservable);
     if (categoria   !== undefined) await this.espacioRepository.updateCategoria(espacioId, categoria);
     if (aforo       !== undefined) await this.espacioRepository.updateAforo(espacioId, Number(aforo));
+    if (porcentajeOcupacion !== undefined) {
+      await this.espacioRepository.updatePorcentaje(espacioId, porcentajeOcupacion);
+    }
     if (horarioApertura !== undefined || horarioCierre !== undefined) {
       await this.espacioRepository.updateHorario(
         espacioId,
@@ -154,6 +165,7 @@ class ModificarEspacio {
     const nuevaCategoria        = categoria        !== undefined ? categoria        : espacio.categoria;
     const nuevoHorarioApertura  = horarioApertura  !== undefined ? horarioApertura  : espacio.horarioApertura;
     const nuevoHorarioCierre    = horarioCierre    !== undefined ? horarioCierre    : espacio.horarioCierre;
+    const nuevoPorcentaje       = porcentajeOcupacion !== undefined ? porcentajeOcupacion : espacio.porcentajeOcupacion;
 
     // Calcular si el espacio actualizado está asignado a investigador visitante
     const espacioActualizado = await this.espacioRepository.findById(espacioId);
@@ -168,6 +180,8 @@ class ModificarEspacio {
       asignadoAInvVisitante,
       nuevoHorarioApertura,
       nuevoHorarioCierre,
+      nuevoPorcentaje,
+      aforo:                espacioActualizado.aforo ?? null,
       reservaRepository:    this.reservaRepository,
       usuarioRepository:    this.usuarioRepository,
       ReservaPolicy,

@@ -31,8 +31,9 @@ class SequelizeEspacioRepository extends EspacioRepository {
       asignadoAEina:     modelo.asignadoAEina   ?? false,
       departamentoId:    modelo.departamento_id  ?? modelo.departamentoId ?? null,
       edificioId:        modelo.edificio_id      ?? modelo.edificioId     ?? null,
-      horarioApertura:   modelo.horarioApertura  ?? null,
-      horarioCierre:     modelo.horarioCierre    ?? null,
+      porcentajeOcupacion: modelo.porcentajeOcupacion ?? null,
+      horarioApertura:     modelo.horarioApertura    ?? null,
+      horarioCierre:       modelo.horarioCierre      ?? null,
       usuariosAsignados,
     });
   }
@@ -66,16 +67,14 @@ class SequelizeEspacioRepository extends EspacioRepository {
         "gid", "id_espacio", "nombre", "uso", "categoria",
         "reservable", "aforo", "planta",
         "departamentoId", "asignadoAEina",
-        "horarioApertura", "horarioCierre", "edificioId",
+        "porcentajeOcupacion", "horarioApertura", "horarioCierre", "edificioId",
       ],
       include: [
         { model: this.UsuarioEspacioModel, attributes: ["usuarioId"] },
-        ...(this.EdificioModel ? [{ model: this.EdificioModel, attributes: ["nombre", "horarioApertura", "horarioCierre"] }] : []),
+        ...(this.EdificioModel ? [{ model: this.EdificioModel, attributes: ["nombre", "horarioApertura", "horarioCierre", "porcentajeOcupacion"] }] : []),
       ],
       order: [["id_espacio", "ASC"]],
     });
-
-    console.log("Edificio primer espacio:", JSON.stringify(modelos[0]?.Edificio ?? "NO VIENE"));
 
     // 2. Recoger todos los usuarioIds unicos
     const todosLosIds = new Set();
@@ -108,6 +107,8 @@ class SequelizeEspacioRepository extends EspacioRepository {
       planta:         m.planta,
       departamentoId: m.departamentoId ?? m.departamento_id ?? null,
       asignadoAEina:  m.asignadoAEina  ?? false,
+      porcentajeOcupacion:     m.porcentajeOcupacion     ?? null,
+      edificioPorcentaje:      m.Edificio?.porcentajeOcupacion ?? null,
       horarioApertura: m.horarioApertura ?? null,
       horarioCierre:   m.horarioCierre   ?? null,
       edificioNombre:  m.Edificio?.nombre ?? null,
@@ -141,6 +142,22 @@ class SequelizeEspacioRepository extends EspacioRepository {
     const modelo = await this.EspacioModel.findByPk(id);
     if (!modelo) return null;
     modelo.aforo = aforo;
+    await modelo.save();
+    return this._toEntity(modelo);
+  }
+
+  async findByEdificioId(edificioId) {
+    const modelos = await this.EspacioModel.findAll({
+      where: { edificioId },
+      include: [{ model: this.UsuarioEspacioModel }],
+    });
+    return modelos.map(m => this._toEntity(m));
+  }
+
+  async updatePorcentaje(id, porcentaje) {
+    const modelo = await this.EspacioModel.findByPk(id);
+    if (!modelo) return null;
+    modelo.porcentajeOcupacion = porcentaje ?? null;
     await modelo.save();
     return this._toEntity(modelo);
   }

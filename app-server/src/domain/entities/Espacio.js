@@ -39,8 +39,9 @@ class Espacio {
     departamentoId    = null,
     edificioId        = null,
     usuariosAsignados = [],
-    horarioApertura   = null,
-    horarioCierre     = null,
+    horarioApertura     = null,
+    horarioCierre       = null,
+    porcentajeOcupacion = null,
   }) {
     this._categoriaRaw = categoria || null;
 
@@ -63,8 +64,9 @@ class Espacio {
     this.departamentoId    = departamentoId;
     this.edificioId        = edificioId;
     this.usuariosAsignados = Array.isArray(usuariosAsignados) ? usuariosAsignados : [];
-    this.horarioApertura   = horarioApertura || null;
-    this.horarioCierre     = horarioCierre   || null;
+    this.horarioApertura     = horarioApertura     || null;
+    this.horarioCierre       = horarioCierre       || null;
+    this.porcentajeOcupacion = porcentajeOcupacion ?? null;
   }
 
   get categoria() {
@@ -118,6 +120,17 @@ class Espacio {
    */
   estaAsignadoA(usuarioId) {
     return this.usuariosAsignados.some((id) => String(id) === String(usuarioId));
+  }
+
+  /**
+   * Devuelve el porcentaje de ocupación efectivo del espacio.
+   * Si el espacio tiene porcentaje propio lo usa, si no hereda el del edificio.
+   * Función sin efectos secundarios.
+   * @param {{ porcentajeOcupacion: number|null }|null} edificio
+   * @returns {number} porcentaje entre 0 y 100
+   */
+  getPorcentajeEfectivo(edificio = null) {
+    return this.porcentajeOcupacion ?? edificio?.porcentajeOcupacion ?? 100;
   }
 
   /**
