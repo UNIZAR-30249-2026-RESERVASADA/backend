@@ -19,11 +19,12 @@ function normalizarUsoFisico(uso) {
 }
 
 class ModificarEspacio {
-  constructor({ espacioRepository, usuarioRepository, reservaRepository }) {
-    this.espacioRepository    = espacioRepository;
-    this.usuarioRepository    = usuarioRepository;
-    this.reservaRepository    = reservaRepository;
-    this.invalidacionService  = new InvalidacionReservasService();
+  constructor({ espacioRepository, usuarioRepository, reservaRepository, notificacionRepository }) {
+    this.espacioRepository      = espacioRepository;
+    this.usuarioRepository      = usuarioRepository;
+    this.reservaRepository      = reservaRepository;
+    this.notificacionRepository = notificacionRepository;
+    this.invalidacionService    = new InvalidacionReservasService();
   }
 
   async execute({ espacioId, cambios, esGerente }) {
@@ -167,6 +168,7 @@ class ModificarEspacio {
     const asignadoAInvVisitante = (espacioActualizado.usuariosAsignados || [])
       .some(u => u.rol === "investigador_visitante");
 
+    console.log("Llamando a invalidarSiProcede, notificacionRepository:", !!this.notificacionRepository);
     const reservasCanceladas = await this.invalidacionService.invalidarSiProcede({
       espacioId,
       nuevaReservable,
@@ -177,8 +179,9 @@ class ModificarEspacio {
       nuevoHorarioCierre,
       nuevoPorcentaje,
       aforo:                espacioActualizado.aforo ?? null,
-      reservaRepository:    this.reservaRepository,
-      usuarioRepository:    this.usuarioRepository,
+      reservaRepository:      this.reservaRepository,
+      usuarioRepository:      this.usuarioRepository,
+      notificacionRepository: this.notificacionRepository,
       ReservaPolicy,
     });
 

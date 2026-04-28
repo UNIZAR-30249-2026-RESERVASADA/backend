@@ -56,9 +56,22 @@ async function eliminarReserva(reservaId, usuarioId, esGerente) {
   return handleResponse(response, "Error eliminando la reserva");
 }
 
+
+async function getNotificaciones(usuarioId) {
+  const response = await rpcCall(REQUEST_QUEUE, { action: "getNotificaciones", payload: { usuarioId } });
+  return handleResponse(response, "Error obteniendo notificaciones");
+}
+
+async function marcarNotificacionesLeidas(usuarioId) {
+  const response = await rpcCall(REQUEST_QUEUE, { action: "marcarNotificacionesLeidas", payload: { usuarioId } });
+  return handleResponse(response, "Error marcando notificaciones como leídas");
+}
+
 module.exports = {
   modificarEspacio,
   modificarEdificio,
+  getNotificaciones,
+  marcarNotificacionesLeidas,
   crearReserva,
   obtenerMetadatosEspacios,
   login,

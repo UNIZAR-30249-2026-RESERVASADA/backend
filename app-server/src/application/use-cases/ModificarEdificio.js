@@ -17,12 +17,13 @@ function domainError(message, statusCode) {
  * - afectarTodos=true: invalida reservas de TODOS los espacios del edificio
  */
 class ModificarEdificio {
-  constructor({ edificioRepository, espacioRepository, reservaRepository, usuarioRepository }) {
-    this.edificioRepository   = edificioRepository;
-    this.espacioRepository    = espacioRepository;
-    this.reservaRepository    = reservaRepository;
-    this.usuarioRepository    = usuarioRepository;
-    this.invalidacionService  = new InvalidacionReservasService();
+  constructor({ edificioRepository, espacioRepository, reservaRepository, usuarioRepository, notificacionRepository }) {
+    this.edificioRepository     = edificioRepository;
+    this.espacioRepository      = espacioRepository;
+    this.reservaRepository      = reservaRepository;
+    this.usuarioRepository      = usuarioRepository;
+    this.notificacionRepository = notificacionRepository;
+    this.invalidacionService    = new InvalidacionReservasService();
   }
 
   async execute({ edificioId, cambios, afectarTodos = false, esGerente }) {
@@ -87,8 +88,9 @@ class ModificarEdificio {
           nuevoHorarioCierre:   cierre,
           nuevoPorcentaje:      pctEfectivo,
           aforo:                espacio.aforo ?? null,
-          reservaRepository:    this.reservaRepository,
-          usuarioRepository:    this.usuarioRepository,
+          reservaRepository:      this.reservaRepository,
+          usuarioRepository:      this.usuarioRepository,
+          notificacionRepository: this.notificacionRepository,
           ReservaPolicy,
         });
 

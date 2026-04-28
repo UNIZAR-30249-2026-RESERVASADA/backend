@@ -5,7 +5,8 @@ const ReservaEspacioModel = require('./models/ReservaEspacio');
 const UsuarioModel       = require('./models/Usuario');
 const DepartamentoModel  = require('./models/Departamento');
 const EdificioModel      = require('./models/Edificio');
-const UsuarioEspacioModel = require('./models/UsuarioEspacio');
+const UsuarioEspacioModel    = require('./models/UsuarioEspacio');
+const NotificacionModel      = require('./models/Notificacion');
 
 const cargarEspacios               = require('./seeders/cargarEspacios');
 const cargarEdificioYDepartamentos = require('./seeders/cargarEdificioYDepartamentos');
@@ -33,7 +34,8 @@ const ReservaEspacio = ReservaEspacioModel(sequelize);
 const Usuario        = UsuarioModel(sequelize);
 const Departamento   = DepartamentoModel(sequelize);
 const Edificio       = EdificioModel(sequelize);
-const UsuarioEspacio = UsuarioEspacioModel(sequelize);
+const UsuarioEspacio  = UsuarioEspacioModel(sequelize);
+const Notificacion    = NotificacionModel(sequelize);
 
 // ── Asociaciones ──────────────────────────────────────────────
 
@@ -83,6 +85,14 @@ UsuarioEspacio.belongsTo(Espacio, { foreignKey: "espacioId" });
 UsuarioEspacio.belongsTo(Usuario, { foreignKey: "usuarioId" });
 Usuario.hasMany(UsuarioEspacio, { foreignKey: "usuarioId" });
 
+// Notificacion (N) ── (1) Usuario
+Usuario.hasMany(Notificacion, { foreignKey: "usuarioId" });
+Notificacion.belongsTo(Usuario, { foreignKey: "usuarioId" });
+
+// Notificacion (N) ── (1) Reserva
+Reserva.hasMany(Notificacion, { foreignKey: "reservaId" });
+Notificacion.belongsTo(Reserva, { foreignKey: "reservaId" });
+
 // ── Conexión ──────────────────────────────────────────────────
 
 async function conectar() {
@@ -124,5 +134,6 @@ module.exports = {
   Departamento,
   Edificio,
   UsuarioEspacio,
+  Notificacion,
   conectar,
 };

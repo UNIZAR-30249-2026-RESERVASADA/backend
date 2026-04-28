@@ -1,11 +1,7 @@
+const Notificacion = require("../entities/Notificacion");
+
 /**
  * @service InvalidacionReservasService
- *
- * Servicio de dominio que coordina la invalidación automática de reservas
- * cuando un espacio cambia sus condiciones (reservabilidad o categoría).
- *
- * Coordina dos agregados: Espacio y Reserva, y consulta Usuario.
- * Encapsula la regla de negocio de las 24 horas de antelación mínima.
  */
 class InvalidacionReservasService {
   async invalidarSiProcede({
@@ -20,8 +16,10 @@ class InvalidacionReservasService {
     aforo,
     reservaRepository,
     usuarioRepository,
+    notificacionRepository,
     ReservaPolicy,
   }) {
+    console.log("notificacionRepository recibido:", !!notificacionRepository);
     const reservasVivas = await reservaRepository.findVivasPorEspacio(espacioId);
     if (reservasVivas.length === 0) return [];
 
@@ -35,68 +33,81 @@ class InvalidacionReservasService {
       );
       if (horasRestantes < 24) continue;
 
+      let motivo = null;
+
       // Caso 1 — espacio ya no es reservable
       if (!nuevaReservable) {
-        console.log(`[Invalidacion] Reserva ${reserva.id} CANCELADA por: espacio no reservable`);
-        reserva.cancelar();
-        await reservaRepository.save(reserva);
-        canceladas.push(reserva.id);
-        continue;
+        motivo = Notificacion.MOTIVOS.ESPACIO_NO_RESERVABLE;
       }
 
       // Caso 2 — porcentaje de ocupación
-      if (nuevoPorcentaje !== null && nuevoPorcentaje !== undefined && aforo) {
+      if (!motivo && nuevoPorcentaje !== null && nuevoPorcentaje !== undefined && aforo) {
         const aforoPermitido = Math.floor(aforo * (nuevoPorcentaje / 100));
         const espacioReserva = reserva.espacios.find(e => Number(e.espacioId) === Number(espacioId));
         const numPersonas    = espacioReserva?.numPersonas ?? null;
+        console.log(`[Invalidacion] Reserva ${reserva.id} — porcentaje: aforo=${aforo}, pct=${nuevoPorcentaje}, permitido=${aforoPermitido}, personas=${numPersonas}, cancela=${numPersonas > aforoPermitido}`);
         if (numPersonas !== null && numPersonas > aforoPermitido) {
-          console.log(`[Invalidacion] Reserva ${reserva.id} — porcentaje: aforo=${aforo}, pct=${nuevoPorcentaje}, permitido=${aforoPermitido}, personas=${numPersonas}, cancela=${numPersonas > aforoPermitido}`);
-          reserva.cancelar();
-          await reservaRepository.save(reserva);
-          canceladas.push(reserva.id);
-          continue;
+          motivo = Notificacion.MOTIVOS.PORCENTAJE_OCUPACION;
         }
       }
 
       // Caso 3 — horario
-      if (nuevoHorarioApertura || nuevoHorarioCierre) {
+      if (!motivo && (nuevoHorarioApertura || nuevoHorarioCierre)) {
         const fueraDeHorario =
           (nuevoHorarioApertura && reserva.horaInicio < nuevoHorarioApertura) ||
           (nuevoHorarioCierre   && reserva.horaFin    > nuevoHorarioCierre);
+        console.log(`[Invalidacion] Reserva ${reserva.id} — horario: inicio=${reserva.horaInicio}, fin=${reserva.horaFin}, apertura=${nuevoHorarioApertura}, cierre=${nuevoHorarioCierre}, fueraDeHorario=${fueraDeHorario}`);
         if (fueraDeHorario) {
-          console.log(`[Invalidacion] Reserva ${reserva.id} — horario: inicio=${reserva.horaInicio}, fin=${reserva.horaFin}, apertura=${nuevoHorarioApertura}, cierre=${nuevoHorarioCierre}, fueraDeHorario=${fueraDeHorario}`);
-          reserva.cancelar();
-          await reservaRepository.save(reserva);
-          canceladas.push(reserva.id);
-          continue;
+          motivo = Notificacion.MOTIVOS.HORARIO;
         }
       }
 
       // Caso 4 — política de reserva
-      const usuario = await usuarioRepository.findById(reserva.usuarioId);
-      if (!usuario) continue;
+      if (!motivo) {
+        const usuario = await usuarioRepository.findById(reserva.usuarioId);
+        if (!usuario) continue;
 
-      const deptEspacio = deptEspacioId
-        ? { id: deptEspacioId, esMismoDepartamento: (d) => d && String(d.id ?? d) === String(deptEspacioId) }
-        : null;
-      const deptUsuario = usuario.departamentoId
-        ? { id: usuario.departamentoId, esMismoDepartamento: (d) => d && String(d.id ?? d) === String(usuario.departamentoId) }
-        : null;
+        const deptEspacio = deptEspacioId
+          ? { id: deptEspacioId, esMismoDepartamento: (d) => d && String(d.id ?? d) === String(deptEspacioId) }
+          : null;
+        const deptUsuario = usuario.departamentoId
+          ? { id: usuario.departamentoId, esMismoDepartamento: (d) => d && String(d.id ?? d) === String(usuario.departamentoId) }
+          : null;
 
-      const puedeReservar = ReservaPolicy.puedeReservar(
-        usuario.rol,
-        nuevaCategoria,
-        deptUsuario,
-        deptEspacio,
-        false,
-        asignadoAInvVisitante
-      );
+        const puedeReservar = ReservaPolicy.puedeReservar(
+          usuario.rol,
+          nuevaCategoria,
+          deptUsuario,
+          deptEspacio,
+          false,
+          asignadoAInvVisitante
+        );
 
-      if (!puedeReservar) {
-        console.log(`[Invalidacion] Reserva ${reserva.id} CANCELADA por: política de reserva no permitida`);
+        console.log(`[Invalidacion] Reserva ${reserva.id} — política: rol=${usuario.rol}, categoria=${nuevaCategoria}, deptUsuario=${usuario.departamentoId}, deptEspacio=${deptEspacioId}, puedeReservar=${puedeReservar}`);
+        if (!puedeReservar) {
+          motivo = Notificacion.MOTIVOS.POLITICA;
+        }
+      }
+
+      if (motivo) {
+        console.log(`[Invalidacion] Reserva ${reserva.id} CANCELADA por: ${motivo}`);
         reserva.cancelar();
         await reservaRepository.save(reserva);
         canceladas.push(reserva.id);
+
+        console.log("motivo final:", motivo);
+        console.log("va a crear notificacion:", !!notificacionRepository);
+
+        // Crear notificación para el usuario
+        if (notificacionRepository) {
+          const notificacion = new Notificacion({
+            usuarioId:   reserva.usuarioId,
+            reservaId:   reserva.id,
+            motivo,
+            descripcion: `Reserva del ${reserva.fecha} a las ${reserva.horaInicio} cancelada automáticamente.`,
+          });
+          await notificacionRepository.save(notificacion);
+        }
       }
     }
 

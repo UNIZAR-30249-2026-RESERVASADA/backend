@@ -1,3 +1,5 @@
+const Notificacion = require("../../domain/entities/Notificacion");
+
 function domainError(message, statusCode) {
   const error = new Error(message);
   error.statusCode = statusCode;
@@ -5,8 +7,9 @@ function domainError(message, statusCode) {
 }
 
 class EliminarReserva {
-  constructor({ reservaRepository }) {
-    this.reservaRepository = reservaRepository;
+  constructor({ reservaRepository, notificacionRepository }) {
+    this.reservaRepository      = reservaRepository;
+    this.notificacionRepository = notificacionRepository;
   }
 
   async execute({ reservaId, usuarioId, esGerente }) {
@@ -24,19 +27,14 @@ class EliminarReserva {
       const fechaHoy  = ahora.toISOString().split("T")[0];
       const horaAhora = ahora.toTimeString().slice(0, 5);
 
-      // Comprobar si la reserva está en curso
       const enCurso = reserva.fecha === fechaHoy
         && reserva.horaInicio <= horaAhora
         && horaAhora < reserva.horaFin;
 
       if (enCurso) {
-        throw domainError(
-          "No se puede eliminar una reserva que ya está en curso",
-          400
-        );
+        throw domainError("No se puede eliminar una reserva que ya está en curso", 400);
       }
 
-      // Comprobar si quedan menos de 24 horas para el inicio
       const inicioReserva  = new Date(`${reserva.fecha}T${reserva.horaInicio}:00`);
       const horasRestantes = (inicioReserva - ahora) / (1000 * 60 * 60);
 
@@ -46,9 +44,27 @@ class EliminarReserva {
           400
         );
       }
+
+      // Crear notificación para el usuario
+      if (this.notificacionRepository) {
+        const notificacion = new Notificacion({
+          usuarioId:   reserva.usuarioId,
+          reservaId:   reserva.id,
+          motivo:      Notificacion.MOTIVOS.ELIMINADA_POR_GERENTE,
+          descripcion: `Tu reserva del ${reserva.fecha} a las ${reserva.horaInicio} ha sido cancelada por el gerente.`,
+        });
+        await this.notificacionRepository.save(notificacion);
+      }
+
+      // Cancelar la reserva (cambiar estado) en vez de eliminarla físicamente
+      reserva.cancelar();
+      await this.reservaRepository.save(reserva);
+      return { id: reservaId, eliminada: true };
     }
 
-    await this.reservaRepository.deleteById(reservaId);
+    // Usuario cancelando su propia reserva — también cambia estado
+    reserva.cancelar();
+    await this.reservaRepository.save(reserva);
     return { id: reservaId, eliminada: true };
   }
 }

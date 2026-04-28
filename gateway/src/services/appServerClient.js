@@ -1,7 +1,9 @@
 const messagingClient = require("./appServerMessagingClient");
 
 module.exports = {
-  modificarEdificio:    messagingClient.modificarEdificio,
+  modificarEdificio:            messagingClient.modificarEdificio,
+  getNotificaciones:            messagingClient.getNotificaciones,
+  marcarNotificacionesLeidas:   messagingClient.marcarNotificacionesLeidas,
   modificarEspacio:           messagingClient.modificarEspacio,
   crearReserva:             messagingClient.crearReserva,
   obtenerMetadatosEspacios: messagingClient.obtenerMetadatosEspacios,

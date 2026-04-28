@@ -10,6 +10,8 @@ async function startRequestConsumer({
   eliminarReserva,
   modificarEspacio,
   modificarEdificio,
+  getNotificaciones,
+  marcarNotificacionesLeidas,
 }) {
   const channel      = await getChannel();
   const requestQueue = process.env.REQUEST_QUEUE || "reservas.requests";
@@ -70,6 +72,16 @@ async function startRequestConsumer({
 
       else if (action === "modificarEdificio") {
         const data = await modificarEdificio.execute(payload);
+        response = { ok: true, data };
+      }
+
+      else if (action === "getNotificaciones") {
+        const data = await getNotificaciones.execute(payload);
+        response = { ok: true, data };
+      }
+
+      else if (action === "marcarNotificacionesLeidas") {
+        const data = await marcarNotificacionesLeidas.execute(payload);
         response = { ok: true, data };
       }
 
