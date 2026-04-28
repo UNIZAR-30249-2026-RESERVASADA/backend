@@ -8,25 +8,6 @@
  * Encapsula la regla de negocio de las 24 horas de antelación mínima.
  */
 class InvalidacionReservasService {
-  /**
-   * Dado un espacio que acaba de modificarse, cancela todas las reservas vivas
-   * que ya no cumplen las condiciones, siempre que queden más de 24 horas
-   * para su inicio.
-   *
-   * Casos que invalidan una reserva:
-   * 1. El espacio pasa a no ser reservable.
-   * 2. La nueva categoría ya no permite reservar al usuario según ReservaPolicy.
-   *
-   * @param {Object}             params
-   * @param {number}             params.espacioId
-   * @param {boolean}            params.nuevaReservable
-   * @param {string}             params.nuevaCategoria
-   * @param {number|null}        params.deptEspacioId
-   * @param {boolean}            params.asignadoAInvVisitante
-   * @param {ReservaRepository}  params.reservaRepository
-   * @param {IUsuarioRepository} params.usuarioRepository
-   * @returns {Promise<number[]>} ids de reservas canceladas
-   */
   async invalidarSiProcede({
     espacioId,
     nuevaReservable,
@@ -49,27 +30,27 @@ class InvalidacionReservasService {
     const canceladas = [];
 
     for (const reserva of reservasVivas) {
-      // Respetar reservas con menos de 24h de antelación
       const horasRestantes = this._calcularHorasRestantes(
         reserva.fecha, reserva.horaInicio, fechaHoy, hH, hM
       );
       if (horasRestantes < 24) continue;
 
-      // Caso 1 — espacio ya no es reservable: cancelar directamente
+      // Caso 1 — espacio ya no es reservable
       if (!nuevaReservable) {
+        console.log(`[Invalidacion] Reserva ${reserva.id} CANCELADA por: espacio no reservable`);
         reserva.cancelar();
         await reservaRepository.save(reserva);
         canceladas.push(reserva.id);
         continue;
       }
 
-      // Caso 2 — comprobar si la reserva ya no cumple el nuevo porcentaje de ocupación
+      // Caso 2 — porcentaje de ocupación
       if (nuevoPorcentaje !== null && nuevoPorcentaje !== undefined && aforo) {
         const aforoPermitido = Math.floor(aforo * (nuevoPorcentaje / 100));
-        // Sumar numPersonas de todos los espacios de la reserva para este espacioId
         const espacioReserva = reserva.espacios.find(e => Number(e.espacioId) === Number(espacioId));
         const numPersonas    = espacioReserva?.numPersonas ?? null;
         if (numPersonas !== null && numPersonas > aforoPermitido) {
+          console.log(`[Invalidacion] Reserva ${reserva.id} — porcentaje: aforo=${aforo}, pct=${nuevoPorcentaje}, permitido=${aforoPermitido}, personas=${numPersonas}, cancela=${numPersonas > aforoPermitido}`);
           reserva.cancelar();
           await reservaRepository.save(reserva);
           canceladas.push(reserva.id);
@@ -77,15 +58,13 @@ class InvalidacionReservasService {
         }
       }
 
-      // Caso 3 — comprobar si la reserva queda fuera del nuevo horario del espacio
+      // Caso 3 — horario
       if (nuevoHorarioApertura || nuevoHorarioCierre) {
-        const apertura = nuevoHorarioApertura;
-        const cierre   = nuevoHorarioCierre;
         const fueraDeHorario =
-          (apertura && reserva.horaInicio < apertura) ||
-          (cierre   && reserva.horaFin    > cierre);
-
+          (nuevoHorarioApertura && reserva.horaInicio < nuevoHorarioApertura) ||
+          (nuevoHorarioCierre   && reserva.horaFin    > nuevoHorarioCierre);
         if (fueraDeHorario) {
+          console.log(`[Invalidacion] Reserva ${reserva.id} — horario: inicio=${reserva.horaInicio}, fin=${reserva.horaFin}, apertura=${nuevoHorarioApertura}, cierre=${nuevoHorarioCierre}, fueraDeHorario=${fueraDeHorario}`);
           reserva.cancelar();
           await reservaRepository.save(reserva);
           canceladas.push(reserva.id);
@@ -93,13 +72,12 @@ class InvalidacionReservasService {
         }
       }
 
-      // Caso 4 — comprobar si el usuario sigue pudiendo reservar con la nueva categoría
+      // Caso 4 — política de reserva
       const usuario = await usuarioRepository.findById(reserva.usuarioId);
       if (!usuario) continue;
 
-      // Objetos con esMismoDepartamento para ReservaPolicy
       const deptEspacio = deptEspacioId
-        ? { esMismoDepartamento: (d) => d && String(d.id ?? d) === String(deptEspacioId) }
+        ? { id: deptEspacioId, esMismoDepartamento: (d) => d && String(d.id ?? d) === String(deptEspacioId) }
         : null;
       const deptUsuario = usuario.departamentoId
         ? { id: usuario.departamentoId, esMismoDepartamento: (d) => d && String(d.id ?? d) === String(usuario.departamentoId) }
@@ -110,11 +88,12 @@ class InvalidacionReservasService {
         nuevaCategoria,
         deptUsuario,
         deptEspacio,
-        false,               // tras el cambio, asignación ya actualizada
+        false,
         asignadoAInvVisitante
       );
 
       if (!puedeReservar) {
+        console.log(`[Invalidacion] Reserva ${reserva.id} CANCELADA por: política de reserva no permitida`);
         reserva.cancelar();
         await reservaRepository.save(reserva);
         canceladas.push(reserva.id);

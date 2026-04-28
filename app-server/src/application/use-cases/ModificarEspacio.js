@@ -36,7 +36,7 @@ class ModificarEspacio {
     const espacio = await this.espacioRepository.findById(espacioId);
     if (!espacio) throw domainError(`Espacio ${espacioId} no encontrado`, 404);
 
-    const { reservable, categoria, aforo, departamentoId, asignadoAEina, usuariosAsignados, horarioApertura, horarioCierre, porcentajeOcupacion } = cambios;
+    const { reservable, categoria, departamentoId, asignadoAEina, usuariosAsignados, horarioApertura, horarioCierre, porcentajeOcupacion } = cambios;
 
     // --- VALIDACIONES DE DOMINIO ---
 
@@ -59,11 +59,6 @@ class ModificarEspacio {
           400
         );
       }
-    }
-
-    // Validar aforo
-    if (aforo !== undefined && (isNaN(Number(aforo)) || Number(aforo) < 0)) {
-      throw domainError("El aforo debe ser un número positivo", 400);
     }
 
     // Validar porcentaje de ocupación si se cambia
@@ -140,7 +135,7 @@ class ModificarEspacio {
 
     if (reservable  !== undefined) await this.espacioRepository.updateReservable(espacioId, reservable);
     if (categoria   !== undefined) await this.espacioRepository.updateCategoria(espacioId, categoria);
-    if (aforo       !== undefined) await this.espacioRepository.updateAforo(espacioId, Number(aforo));
+
     if (porcentajeOcupacion !== undefined) {
       await this.espacioRepository.updatePorcentaje(espacioId, porcentajeOcupacion);
     }

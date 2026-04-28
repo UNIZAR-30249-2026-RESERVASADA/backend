@@ -67,6 +67,12 @@ class ModificarEdificio {
           ? (porcentajeOcupacion ?? edificioActualizado.porcentajeOcupacion ?? 100)
           : (espacio.porcentajeOcupacion ?? porcentajeOcupacion ?? edificioActualizado.porcentajeOcupacion ?? 100);
 
+        // Si afectarTodos, poner null en los espacios que tenían porcentaje propio
+        // para que hereden el del edificio (que acabamos de actualizar)
+        if (afectarTodos && porcentajeOcupacion !== undefined && espacio.porcentajeOcupacion !== null) {
+          await this.espacioRepository.updatePorcentaje(espacio.gid, null);
+        }
+
         // Horario efectivo del espacio (no cambia al modificar el edificio)
         const apertura = espacio.horarioApertura ?? edificioActualizado.horarioApertura ?? null;
         const cierre   = espacio.horarioCierre   ?? edificioActualizado.horarioCierre   ?? null;
