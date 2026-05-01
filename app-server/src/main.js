@@ -57,7 +57,7 @@ async function main() {
   const eliminarReserva        = new EliminarReserva({ reservaRepository, notificacionRepository });
   const modificarEspacio       = new ModificarEspacio({ espacioRepository, usuarioRepository, reservaRepository, notificacionRepository });
   const modificarEdificio          = new ModificarEdificio({ edificioRepository, espacioRepository, reservaRepository, usuarioRepository, notificacionRepository });
-  const getNotificaciones          = new GetNotificaciones({ notificacionRepository });
+  const getNotificaciones          = new GetNotificaciones({ notificacionRepository, reservaRepository, espacioRepository });
   const marcarNotificacionesLeidas = new MarcarNotificacionesLeidas({ notificacionRepository });
 
   await startRequestConsumer({
