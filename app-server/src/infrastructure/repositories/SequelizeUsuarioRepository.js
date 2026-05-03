@@ -62,6 +62,14 @@ class SequelizeUsuarioRepository extends UsuarioRepository {
     await modelo.save();
     return this._toEntity(modelo);
   }
+
+  async updateEsGerente(id, esGerente) {
+    const modelo = await this.UsuarioModel.findByPk(id);
+    if (!modelo) return null;
+    modelo.esGerente = esGerente;
+    await modelo.save();
+    return this._toEntity(modelo);
+  }
 }
 
 module.exports = SequelizeUsuarioRepository;

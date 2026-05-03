@@ -19,6 +19,10 @@ class UsuarioRepository {
     throw new Error("Método updateDepartamento() no implementado");
   }
 
+  async updateEsGerente(_id, _esGerente) {
+    throw new Error("Método updateEsGerente() no implementado");
+  }
+
   async findAll() {
     throw new Error("Método findAll() no implementado");
   }

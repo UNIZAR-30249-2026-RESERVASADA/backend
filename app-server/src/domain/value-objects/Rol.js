@@ -51,6 +51,27 @@ class Rol {
   esGerente()                { return this._valor === "gerente"; }
   esInvestigadorVisitante()  { return this._valor === "investigador_visitante"; }
 
+  /**
+   * Indica si el rol requiere estar adscrito a un departamento.
+   * Función sin efectos secundarios.
+   * Postcondición: devuelve true si el rol necesita departamento obligatoriamente
+   * @returns {boolean}
+   */
+  requiereDepartamento() {
+    return ["investigador_contratado", "docente_investigador", "tecnico_laboratorio", "investigador_visitante"]
+      .includes(this._valor);
+  }
+
+  /**
+   * Indica si el rol puede estar adscrito a un departamento.
+   * Función sin efectos secundarios.
+   * Postcondición: devuelve false si el rol no puede tener departamento
+   * @returns {boolean}
+   */
+  permiteDepartamento() {
+    return !["estudiante", "conserje", "gerente"].includes(this._valor);
+  }
+
   toString() { return this._valor; }
 
   static get VALORES() { return [...ROLES_VALIDOS]; }

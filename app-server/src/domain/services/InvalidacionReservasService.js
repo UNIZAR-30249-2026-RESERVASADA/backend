@@ -19,7 +19,6 @@ class InvalidacionReservasService {
     notificacionRepository,
     ReservaPolicy,
   }) {
-    console.log("notificacionRepository recibido:", !!notificacionRepository);
     const reservasVivas = await reservaRepository.findVivasPorEspacio(espacioId);
     if (reservasVivas.length === 0) return [];
 
@@ -95,9 +94,6 @@ class InvalidacionReservasService {
         await reservaRepository.save(reserva);
         canceladas.push(reserva.id);
 
-        console.log("motivo final:", motivo);
-        console.log("va a crear notificacion:", !!notificacionRepository);
-
         // Crear notificación para el usuario
         if (notificacionRepository) {
           const notificacion = new Notificacion({
@@ -105,6 +101,92 @@ class InvalidacionReservasService {
             reservaId:   reserva.id,
             motivo,
             descripcion: `Reserva del ${reserva.fecha} a las ${reserva.horaInicio} cancelada automáticamente.`,
+          });
+          await notificacionRepository.save(notificacion);
+        }
+      }
+    }
+
+    return canceladas;
+  }
+
+  /**
+   * Invalida las reservas de un usuario cuando cambia su rol o departamento.
+   * Comprueba cada reserva viva del usuario y cancela las que ya no cumplan
+   * las restricciones del nuevo rol/departamento según ReservaPolicy.
+   *
+   * Precondición: usuarioId es un identificador válido
+   * Precondición: nuevoRol y/o nuevoDepartamentoId son los valores tras el cambio
+   * Postcondición: las reservas que ya no cumplan son canceladas y notificadas
+   * @returns {Promise<number[]>} ids de reservas canceladas
+   */
+  async invalidarPorCambioUsuario({
+    usuarioId,
+    nuevoRol,
+    nuevoDepartamentoId,
+    reservaRepository,
+    espacioRepository,
+    notificacionRepository,
+    ReservaPolicy,
+  }) {
+    const reservasVivas = await reservaRepository.findByUsuario(usuarioId);
+    const activas = reservasVivas.filter(r => r.estado === "aceptada");
+    if (activas.length === 0) return [];
+
+    const { fechaHoy, horaAhora } = this._obtenerHoraLocalMadrid();
+    const [hH, hM] = horaAhora.split(":").map(Number);
+    const canceladas = [];
+
+    for (const reserva of activas) {
+      const horasRestantes = this._calcularHorasRestantes(
+        reserva.fecha, reserva.horaInicio, fechaHoy, hH, hM
+      );
+      if (horasRestantes < 24) continue;
+
+      let debeCancel = false;
+
+      for (const { espacioId } of reserva.espacios) {
+        const espacio = await espacioRepository.findById(espacioId);
+        if (!espacio) continue;
+
+        const deptEspacio = espacio.departamentoId
+          ? { id: espacio.departamentoId, esMismoDepartamento: (d) => d && String(d.id ?? d) === String(espacio.departamentoId) }
+          : null;
+        const deptUsuario = nuevoDepartamentoId
+          ? { id: nuevoDepartamentoId, esMismoDepartamento: (d) => d && String(d.id ?? d) === String(nuevoDepartamentoId) }
+          : null;
+
+        const usuarioEstaAsignado   = espacio.estaAsignadoA(usuarioId);
+        const asignadoAInvVisitante = (espacio.usuariosAsignados || []).some(u => u.rol === "investigador_visitante");
+
+        const puedeReservar = ReservaPolicy.puedeReservar(
+          nuevoRol,
+          espacio.categoria,
+          deptUsuario,
+          deptEspacio,
+          usuarioEstaAsignado,
+          asignadoAInvVisitante
+        );
+
+        if (!puedeReservar) {
+          debeCancel = true;
+          break;
+        }
+      }
+
+      if (debeCancel) {
+        console.log(`[Invalidacion] Reserva ${reserva.id} CANCELADA por: cambio de usuario`);
+        reserva.cancelar();
+        await reservaRepository.save(reserva);
+        canceladas.push(reserva.id);
+
+        if (notificacionRepository) {
+          const Notificacion = require("../entities/Notificacion");
+          const notificacion = new Notificacion({
+            usuarioId:   reserva.usuarioId,
+            reservaId:   reserva.id,
+            motivo:      Notificacion.MOTIVOS.CAMBIO_USUARIO,
+            descripcion: `Tu reserva del ${reserva.fecha} a las ${reserva.horaInicio} ha sido cancelada por un cambio en tu perfil de usuario.`,
           });
           await notificacionRepository.save(notificacion);
         }

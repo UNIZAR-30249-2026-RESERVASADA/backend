@@ -26,6 +26,7 @@ class Notificacion {
     PORCENTAJE_OCUPACION:  "porcentaje_ocupacion",
     HORARIO:               "horario",
     POLITICA:              "politica",
+    CAMBIO_USUARIO:        "cambio_usuario",
   };
 
   /**
@@ -94,6 +95,7 @@ class Notificacion {
       [Notificacion.MOTIVOS.PORCENTAJE_OCUPACION]:  "El número de asistentes supera el nuevo límite de ocupación",
       [Notificacion.MOTIVOS.HORARIO]:               "La reserva queda fuera del nuevo horario del espacio",
       [Notificacion.MOTIVOS.POLITICA]:              "Tu rol ya no permite reservar este tipo de espacio",
+      [Notificacion.MOTIVOS.CAMBIO_USUARIO]:        "Tu perfil de usuario ha cambiado y una reserva tuya ya no es válida",
     };
     const resultado = textos[this.motivo] || this.motivo;
     console.assert(resultado && resultado.length > 0, "Aserción fallida: textoMotivo debe devolver string no vacío");

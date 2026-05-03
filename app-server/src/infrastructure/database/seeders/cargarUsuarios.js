@@ -34,7 +34,7 @@ async function cargarUsuarios({ Usuario, Departamento }) {
       contrasenia: passwordHash,
       rol: "docente_investigador",
       esGerente: true,
-      departamentoId: null,
+      departamentoId: depInfId,
     },
 
     // Docente-investigador (Inf)

@@ -67,11 +67,23 @@ async function marcarNotificacionesLeidas(usuarioId) {
   return handleResponse(response, "Error marcando notificaciones como leídas");
 }
 
+async function crearUsuario(datos) {
+  const response = await rpcCall(REQUEST_QUEUE, { action: "crearUsuario", payload: datos });
+  return handleResponse(response, "Error creando el usuario");
+}
+
+async function modificarUsuario(usuarioId, cambios, esGerente) {
+  const response = await rpcCall(REQUEST_QUEUE, { action: "modificarUsuario", payload: { usuarioId, cambios, esGerente } });
+  return handleResponse(response, "Error modificando el usuario");
+}
+
 module.exports = {
   modificarEspacio,
   modificarEdificio,
   getNotificaciones,
   marcarNotificacionesLeidas,
+  crearUsuario,
+  modificarUsuario,
   crearReserva,
   obtenerMetadatosEspacios,
   login,
