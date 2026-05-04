@@ -166,8 +166,10 @@ class ReservarEspacio {
       const reservasExistentes = await this.reservaRepository.findByEspacioYFecha(espacioId, fecha);
       const solapadas = SolapamientoService.filtrarSolapadas(reserva, reservasExistentes);
       if (solapadas.length > 0) {
+        const horaFinMasTarde = solapadas.reduce((max, r) => r.horaFin > max ? r.horaFin : max, "00:00");
         throw domainError(
-          `El espacio ${espacio.nombre || espacioId} ya está reservado en esa franja horaria`,
+          `El espacio ${espacio.nombre || espacioId} ya está reservado en esa franja horaria. ` +
+          `Disponible a partir de las ${horaFinMasTarde}.`,
           400
         );
       }
