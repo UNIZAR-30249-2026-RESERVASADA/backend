@@ -5,15 +5,15 @@ services:
     image: postgis/postgis:16-3.4
     container_name: reservas_postgres
     environment:
-      POSTGRES_DB: reservas_db
-      POSTGRES_USER: reservas_user
-      POSTGRES_PASSWORD: reservas_pass
+      POSTGRES_DB:       ${POSTGRES_DB}
+      POSTGRES_USER:     ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U reservas_user -d reservas_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -27,8 +27,8 @@ services:
       - "5672:5672"
       - "15672:15672"
     environment:
-      RABBITMQ_DEFAULT_USER: rabbit_user
-      RABBITMQ_DEFAULT_PASS: rabbit_pass
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 5s
@@ -62,14 +62,14 @@ services:
     container_name: reservas_app_server
     environment:
       APP_SERVER_PORT: "4000"
-      DB_HOST: postgres
-      DB_PORT: "5432"
-      DB_NAME: reservas_db
-      DB_USER: reservas_user
-      DB_PASSWORD: reservas_pass
-      RABBITMQ_URL: amqp://rabbit_user:rabbit_pass@rabbitmq:5672
-      REQUEST_QUEUE: reservas.requests
-      RESPONSE_QUEUE: reservas.responses
+      DB_HOST:         postgres
+      DB_PORT:         "5432"
+      DB_NAME:         ${POSTGRES_DB}
+      DB_USER:         ${POSTGRES_USER}
+      DB_PASSWORD:     ${POSTGRES_PASSWORD}
+      RABBITMQ_URL:    amqp://${RABBITMQ_USER}:${RABBITMQ_PASS}@rabbitmq:5672
+      REQUEST_QUEUE:   ${REQUEST_QUEUE}
+      RESPONSE_QUEUE:  ${RESPONSE_QUEUE}
     depends_on:
       postgres:
         condition: service_healthy
@@ -88,13 +88,13 @@ services:
       dockerfile: Dockerfile
     container_name: reservas_gateway
     environment:
-      GATEWAY_PORT: "3000"
-      JWT_SECRET: super_secreto_reservas
-      JWT_EXPIRES_IN: 8h
-      RABBITMQ_URL: amqp://rabbit_user:rabbit_pass@rabbitmq:5672
-      REQUEST_QUEUE: reservas.requests
-      RESPONSE_QUEUE: reservas.responses
-      GEO_SERVER_URL: http://geo-server:5000   # ← URL interna de PyGeoAPI
+      GATEWAY_PORT:   "3000"
+      JWT_SECRET:     ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
+      RABBITMQ_URL:   amqp://${RABBITMQ_USER}:${RABBITMQ_PASS}@rabbitmq:5672
+      REQUEST_QUEUE:  ${REQUEST_QUEUE}
+      RESPONSE_QUEUE: ${RESPONSE_QUEUE}
+      GEO_SERVER_URL: http://geo-server:5000
     depends_on:
       rabbitmq:
         condition: service_healthy

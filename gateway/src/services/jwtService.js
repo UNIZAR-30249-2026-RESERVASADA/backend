@@ -4,11 +4,12 @@ const { jwtSecret, jwtExpiresIn } = require("../config/jwt");
 function signToken(usuario) {
   return jwt.sign(
     {
-      id: usuario.id,
-      email: usuario.email,
-      rol: usuario.rol,
+      id:             usuario.id,
+      email:          usuario.email,
+      rol:            usuario.rol,
+      esGerente:      usuario.esGerente ?? false,
       departamentoId: usuario.departamentoId ?? null,
-      nombre: usuario.nombre,
+      nombre:         usuario.nombre,
     },
     jwtSecret,
     { expiresIn: jwtExpiresIn }

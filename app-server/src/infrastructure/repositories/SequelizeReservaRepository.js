@@ -109,22 +109,62 @@ class SequelizeReservaRepository extends ReservaRepository {
   }
 
   async findVivas() {
-    const ahora     = new Date();
-    const fechaHoy  = ahora.toISOString().split("T")[0];
+    const ahora    = new Date();
+    const fechaHoy = ahora.toISOString().split("T")[0];
     const horaAhora = ahora.toTimeString().slice(0, 5);
 
+    // Traer todas las reservas aceptadas de hoy en adelante
     const modelos = await this.ReservaModel.findAll({
       where: {
         estado: "aceptada",
         [Op.or]: [
           { fecha: { [Op.gt]: fechaHoy } },
-          { fecha: fechaHoy, horaInicio: { [Op.gte]: horaAhora } },
+          { fecha: fechaHoy },
         ],
       },
       include: [{ model: this.ReservaEspacioModel }],
       order: [["fecha", "ASC"], ["horaInicio", "ASC"]],
     });
-    return modelos.map((m) => this._toEntity(m));
+
+    const entidades = modelos.map((m) => this._toEntity(m));
+
+    // Filtrar en memoria las que su horaFin es posterior al momento actual
+    // Una reserva está viva si: fecha > hoy, o fecha == hoy y horaFin > horaAhora
+    return entidades.filter((r) => {
+      if (r.fecha > fechaHoy) return true;
+      if (r.fecha < fechaHoy) return false;
+      return r.horaFin > horaAhora;
+    });
+  }
+
+  async findVivasPorEspacio(espacioId) {
+    const ahora     = new Date();
+    const fechaHoy  = ahora.toISOString().split("T")[0];
+    const horaAhora = ahora.toTimeString().slice(0, 5);
+
+    const reservaEspacios = await this.ReservaEspacioModel.findAll({ where: { espacioId } });
+    const reservaIds = reservaEspacios.map(re => re.reservaId);
+    if (reservaIds.length === 0) return [];
+
+    const modelos = await this.ReservaModel.findAll({
+      where: {
+        id:     { [Op.in]: reservaIds },
+        estado: "aceptada",
+        [Op.or]: [
+          { fecha: { [Op.gt]: fechaHoy } },
+          { fecha: fechaHoy },
+        ],
+      },
+      include: [{ model: this.ReservaEspacioModel }],
+      order: [["fecha", "ASC"], ["horaInicio", "ASC"]],
+    });
+
+    const entidades = modelos.map(m => this._toEntity(m));
+    return entidades.filter(r => {
+      if (r.fecha > fechaHoy) return true;
+      if (r.fecha < fechaHoy) return false;
+      return r.horaFin > horaAhora;
+    });
   }
 
   async deleteById(id) {

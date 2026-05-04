@@ -6,6 +6,9 @@ const reservaRoutes = require("./routes/reservasRoutes");
 const espacioRoutes = require("./routes/espaciosRoutes");
 const authRoutes = require("./routes/authRoutes");
 const geoRoutes = require("./routes/geoRoutes");
+const edificioRoutes       = require("./routes/edificioRoutes");
+const notificacionesRoutes = require("./routes/notificacionesRoutes");
+const usuariosRoutes       = require("./routes/usuariosRoutes");
 const errorHandler = require("./middlewares/errorHandler");
 
 const app = express();
@@ -29,6 +32,9 @@ app.use("/api", reservaRoutes);
 app.use("/api", espacioRoutes);
 app.use("/api", authRoutes);
 app.use("/api", geoRoutes);
+app.use("/api", edificioRoutes);
+app.use("/api", notificacionesRoutes);
+app.use("/api", usuariosRoutes);
 
 app.use(errorHandler);
 

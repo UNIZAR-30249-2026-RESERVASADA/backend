@@ -6,6 +6,14 @@ async function startRequestConsumer({
   login,
   obtenerReservasUsuario,
   cancelarReservaPropia,
+  obtenerReservasVivas,
+  eliminarReserva,
+  modificarEspacio,
+  modificarEdificio,
+  getNotificaciones,
+  marcarNotificacionesLeidas,
+  crearUsuario,
+  modificarUsuario,
 }) {
   const channel      = await getChannel();
   const requestQueue = process.env.REQUEST_QUEUE || "reservas.requests";
@@ -46,6 +54,46 @@ async function startRequestConsumer({
 
       else if (action === "cancelarReservaPropia") {
         const data = await cancelarReservaPropia.execute(payload);
+        response = { ok: true, data };
+      }
+
+      else if (action === "obtenerReservasVivas") {
+        const data = await obtenerReservasVivas.execute();
+        response = { ok: true, data };
+      }
+
+      else if (action === "eliminarReserva") {
+        const data = await eliminarReserva.execute(payload);
+        response = { ok: true, data };
+      }
+
+      else if (action === "modificarEspacio") {
+        const data = await modificarEspacio.execute(payload);
+        response = { ok: true, data };
+      }
+
+      else if (action === "modificarEdificio") {
+        const data = await modificarEdificio.execute(payload);
+        response = { ok: true, data };
+      }
+
+      else if (action === "getNotificaciones") {
+        const data = await getNotificaciones.execute(payload);
+        response = { ok: true, data };
+      }
+
+      else if (action === "marcarNotificacionesLeidas") {
+        const data = await marcarNotificacionesLeidas.execute(payload);
+        response = { ok: true, data };
+      }
+
+      else if (action === "crearUsuario") {
+        const data = await crearUsuario.execute(payload);
+        response = { ok: true, data };
+      }
+
+      else if (action === "modificarUsuario") {
+        const data = await modificarUsuario.execute(payload);
         response = { ok: true, data };
       }
 

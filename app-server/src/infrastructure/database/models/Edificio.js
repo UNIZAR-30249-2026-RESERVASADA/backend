@@ -47,4 +47,3 @@ module.exports = (sequelize) => {
 
   return Edificio;
 };
-// ...existing code...

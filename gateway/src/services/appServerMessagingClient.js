@@ -21,6 +21,16 @@ async function obtenerMetadatosEspacios() {
   return handleResponse(response, "Error obteniendo metadatos de espacios");
 }
 
+async function modificarEspacio(espacioId, cambios, esGerente) {
+  const response = await rpcCall(REQUEST_QUEUE, { action: "modificarEspacio", payload: { espacioId, cambios, esGerente } });
+  return handleResponse(response, "Error modificando el espacio");
+}
+
+async function modificarEdificio(edificioId, cambios, afectarTodos, esGerente) {
+  const response = await rpcCall(REQUEST_QUEUE, { action: "modificarEdificio", payload: { edificioId, cambios, afectarTodos, esGerente } });
+  return handleResponse(response, "Error modificando el edificio");
+}
+
 async function login(email, password) {
   const response = await rpcCall(REQUEST_QUEUE, { action: "login", payload: { email, password } });
   return handleResponse(response, "Error en login");
@@ -36,10 +46,49 @@ async function cancelarReservaPropia(reservaId, usuarioId) {
   return handleResponse(response, "Error cancelando la reserva");
 }
 
+async function obtenerReservasVivas() {
+  const response = await rpcCall(REQUEST_QUEUE, { action: "obtenerReservasVivas", payload: {} });
+  return handleResponse(response, "Error obteniendo reservas vivas");
+}
+
+async function eliminarReserva(reservaId, usuarioId, esGerente) {
+  const response = await rpcCall(REQUEST_QUEUE, { action: "eliminarReserva", payload: { reservaId, usuarioId, esGerente } });
+  return handleResponse(response, "Error eliminando la reserva");
+}
+
+
+async function getNotificaciones(usuarioId) {
+  const response = await rpcCall(REQUEST_QUEUE, { action: "getNotificaciones", payload: { usuarioId } });
+  return handleResponse(response, "Error obteniendo notificaciones");
+}
+
+async function marcarNotificacionesLeidas(usuarioId) {
+  const response = await rpcCall(REQUEST_QUEUE, { action: "marcarNotificacionesLeidas", payload: { usuarioId } });
+  return handleResponse(response, "Error marcando notificaciones como leídas");
+}
+
+async function crearUsuario(datos) {
+  const response = await rpcCall(REQUEST_QUEUE, { action: "crearUsuario", payload: datos });
+  return handleResponse(response, "Error creando el usuario");
+}
+
+async function modificarUsuario(usuarioId, cambios, esGerente) {
+  const response = await rpcCall(REQUEST_QUEUE, { action: "modificarUsuario", payload: { usuarioId, cambios, esGerente } });
+  return handleResponse(response, "Error modificando el usuario");
+}
+
 module.exports = {
+  modificarEspacio,
+  modificarEdificio,
+  getNotificaciones,
+  marcarNotificacionesLeidas,
+  crearUsuario,
+  modificarUsuario,
   crearReserva,
   obtenerMetadatosEspacios,
   login,
   obtenerReservasUsuario,
   cancelarReservaPropia,
+  obtenerReservasVivas,
+  eliminarReserva,
 };

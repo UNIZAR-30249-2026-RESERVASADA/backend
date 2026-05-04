@@ -2,11 +2,12 @@ const EspacioRepository = require("../../domain/repositories/EspacioRepository")
 const Espacio = require("../../domain/entities/Espacio");
 
 class SequelizeEspacioRepository extends EspacioRepository {
-  constructor({ EspacioModel, UsuarioEspacioModel, UsuarioModel }) {
+  constructor({ EspacioModel, UsuarioEspacioModel, UsuarioModel, EdificioModel }) {
     super();
     this.EspacioModel        = EspacioModel;
     this.UsuarioEspacioModel = UsuarioEspacioModel;
     this.UsuarioModel        = UsuarioModel;
+    this.EdificioModel       = EdificioModel;
   }
 
   _toEntity(modelo) {
@@ -27,9 +28,12 @@ class SequelizeEspacioRepository extends EspacioRepository {
       reservable:        modelo.reservable,
       aforo:             modelo.aforo,
       geom:              modelo.geom,
-      asignadoAEina:     modelo.asignadoAEina ?? false,
-      departamentoId:    modelo.departamento_id ?? modelo.departamentoId ?? null,
-      edificioId:        modelo.edificio_id    ?? modelo.edificioId     ?? null,
+      asignadoAEina:     modelo.asignadoAEina   ?? false,
+      departamentoId:    modelo.departamento_id  ?? modelo.departamentoId ?? null,
+      edificioId:        modelo.edificio_id      ?? modelo.edificioId     ?? null,
+      porcentajeOcupacion: modelo.porcentajeOcupacion ?? null,
+      horarioApertura:     modelo.horarioApertura    ?? null,
+      horarioCierre:       modelo.horarioCierre      ?? null,
       usuariosAsignados,
     });
   }
@@ -60,11 +64,15 @@ class SequelizeEspacioRepository extends EspacioRepository {
     // 1. Cargar espacios con sus relaciones de usuario
     const modelos = await this.EspacioModel.findAll({
       attributes: [
-        "gid", "id_espacio", "nombre", "categoria",
+        "gid", "id_espacio", "nombre", "uso", "categoria",
         "reservable", "aforo", "planta",
         "departamentoId", "asignadoAEina",
+        "porcentajeOcupacion", "horarioApertura", "horarioCierre", "edificioId",
       ],
-      include: [{ model: this.UsuarioEspacioModel, attributes: ["usuarioId"] }],
+      include: [
+        { model: this.UsuarioEspacioModel, attributes: ["usuarioId"] },
+        ...(this.EdificioModel ? [{ model: this.EdificioModel, attributes: ["nombre", "horarioApertura", "horarioCierre", "porcentajeOcupacion"] }] : []),
+      ],
       order: [["id_espacio", "ASC"]],
     });
 
@@ -92,12 +100,20 @@ class SequelizeEspacioRepository extends EspacioRepository {
       gid:            m.gid,
       id_espacio:     m.id_espacio,
       nombre:         m.nombre,
+      uso:            m.uso ?? null,
       categoria:      m.categoria,
       reservable:     m.reservable,
       aforo:          m.aforo,
       planta:         m.planta,
       departamentoId: m.departamentoId ?? m.departamento_id ?? null,
       asignadoAEina:  m.asignadoAEina  ?? false,
+      porcentajeOcupacion:     m.porcentajeOcupacion     ?? null,
+      edificioPorcentaje:      m.Edificio?.porcentajeOcupacion ?? null,
+      horarioApertura: m.horarioApertura ?? null,
+      horarioCierre:   m.horarioCierre   ?? null,
+      edificioNombre:  m.Edificio?.nombre ?? null,
+      edificioHorarioApertura: m.Edificio?.horarioApertura ?? null,
+      edificioHorarioCierre:   m.Edificio?.horarioCierre   ?? null,
       usuariosAsignados: (m.UsuarioEspacios ?? []).map((ue) => {
         const uid = Number(ue.usuarioId ?? ue.usuario_id);
         const u   = usuariosPorId[uid];
@@ -128,6 +144,57 @@ class SequelizeEspacioRepository extends EspacioRepository {
     modelo.aforo = aforo;
     await modelo.save();
     return this._toEntity(modelo);
+  }
+
+  async findByEdificioId(edificioId) {
+    const modelos = await this.EspacioModel.findAll({
+      where: { edificioId },
+      include: [{ model: this.UsuarioEspacioModel }],
+    });
+    return modelos.map(m => this._toEntity(m));
+  }
+
+  async updatePorcentaje(id, porcentaje) {
+    const modelo = await this.EspacioModel.findByPk(id);
+    if (!modelo) return null;
+    modelo.porcentajeOcupacion = porcentaje ?? null;
+    await modelo.save();
+    return this._toEntity(modelo);
+  }
+
+  async updateHorario(id, horarioApertura, horarioCierre) {
+    const modelo = await this.EspacioModel.findByPk(id);
+    if (!modelo) return null;
+    modelo.horarioApertura = horarioApertura ?? null;
+    modelo.horarioCierre   = horarioCierre   ?? null;
+    await modelo.save();
+    return this._toEntity(modelo);
+  }
+
+  async updateAsignacion(id, { departamentoId, asignadoAEina, usuariosAsignados }) {
+    const modelo = await this.EspacioModel.findByPk(id);
+    if (!modelo) return null;
+
+    // Actualizar campos de asignación en el espacio
+    modelo.departamentoId = departamentoId ?? null;
+    modelo.asignadoAEina  = asignadoAEina  ?? false;
+    await modelo.save();
+
+    // Actualizar usuarios asignados — borrar los anteriores y crear los nuevos
+    await this.UsuarioEspacioModel.destroy({ where: { espacioId: id } });
+    if (usuariosAsignados && usuariosAsignados.length > 0) {
+      await Promise.all(
+        usuariosAsignados.map((uid) =>
+          this.UsuarioEspacioModel.findOrCreate({
+            where: { usuarioId: uid, espacioId: id },
+          })
+        )
+      );
+    }
+
+    return this._toEntity(await this.EspacioModel.findByPk(id, {
+      include: [{ model: this.UsuarioEspacioModel }],
+    }));
   }
 }
 

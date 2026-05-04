@@ -25,6 +25,14 @@ class SequelizeEdificioRepository extends EdificioRepository {
     const modelo = await this.EdificioModel.findByPk(id);
     return this._toEntity(modelo);
   }
+
+  async update(id, { porcentajeOcupacion }) {
+    const modelo = await this.EdificioModel.findByPk(id);
+    if (!modelo) return null;
+    if (porcentajeOcupacion !== undefined) modelo.porcentajeOcupacion = porcentajeOcupacion;
+    await modelo.save();
+    return this._toEntity(modelo);
+  }
 }
 
 module.exports = SequelizeEdificioRepository;

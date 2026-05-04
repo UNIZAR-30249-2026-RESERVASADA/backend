@@ -1,5 +1,6 @@
-const express = require("express");
+const express           = require("express");
 const espacioController = require("../controllers/espaciosController");
+const authMiddleware    = require("../middlewares/authMiddleware");
 
 const router = express.Router();
 
@@ -8,25 +9,63 @@ const router = express.Router();
  * /api/espacios/metadatos:
  *   get:
  *     summary: Obtener metadatos de todos los espacios
- *     description: Retorna lista de espacios con información de categoría, disponibilidad y aforo
- *     tags:
- *       - Espacios
+ *     tags: [Espacios]
  *     responses:
  *       200:
  *         description: Lista de metadatos de espacios
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/EspacioMetadatos'
- *       500:
- *         description: Error del servidor
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  */
-router.get("/espacios/metadatos", espacioController.getMetadatosEspacios);
+router.get(
+  "/espacios/metadatos",
+  espacioController.getMetadatosEspacios
+);
+
+/**
+ * @swagger
+ * /api/espacios/{id}:
+ *   patch:
+ *     summary: Modificar un espacio (solo gerentes)
+ *     tags: [Espacios]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               reservable:
+ *                 type: boolean
+ *               categoria:
+ *                 type: string
+ *               aforo:
+ *                 type: integer
+ *               departamentoId:
+ *                 type: integer
+ *               asignadoAEina:
+ *                 type: boolean
+ *               usuariosAsignados:
+ *                 type: array
+ *                 items:
+ *                   type: integer
+ *     responses:
+ *       200:
+ *         description: Espacio modificado correctamente
+ *       403:
+ *         description: Solo los gerentes pueden modificar espacios
+ *       404:
+ *         description: Espacio no encontrado
+ */
+router.patch(
+  "/espacios/:id",
+  authMiddleware,
+  espacioController.modificarEspacio
+);
 
 module.exports = router;

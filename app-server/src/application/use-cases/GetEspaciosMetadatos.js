@@ -9,14 +9,21 @@ class GetEspaciosMetadatos {
       gid:                   espacio.gid,
       id_espacio:            espacio.id_espacio,
       nombre:                espacio.nombre,
+      uso:                   espacio.uso,
       categoria:             espacio.categoria,
       reservable:            espacio.reservable,
       aforo:                 espacio.aforo,
       planta:                espacio.planta,
       departamentoId:        espacio.departamentoId,
       asignadoAEina:         espacio.asignadoAEina,
-      usuariosAsignados:     espacio.usuariosAsignados ?? [],
-      ocupado:               false,
+      usuariosAsignados:      espacio.usuariosAsignados ?? [],
+      porcentajeOcupacion:      espacio.porcentajeOcupacion      ?? null,
+      edificioPorcentaje:       espacio.edificioPorcentaje       ?? null,
+      horarioApertura:          espacio.horarioApertura          ?? null,
+      horarioCierre:            espacio.horarioCierre             ?? null,
+      edificioNombre:           espacio.edificioNombre            ?? null,
+      edificioHorarioApertura:  espacio.edificioHorarioApertura   ?? null,
+      edificioHorarioCierre:    espacio.edificioHorarioCierre     ?? null,
     }));
   }
 }

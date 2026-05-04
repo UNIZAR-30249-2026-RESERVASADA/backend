@@ -22,6 +22,22 @@ class EspacioRepository {
   async updateAforo(_id, _aforo) {
     throw new Error("Método updateAforo() no implementado");
   }
+
+  async updateAsignacion(_id, _asignacion) {
+    throw new Error("Método updateAsignacion() no implementado");
+  }
+
+  async updateHorario(_id, _horarioApertura, _horarioCierre) {
+    throw new Error("Método updateHorario() no implementado");
+  }
+
+  async updatePorcentaje(_id, _porcentaje) {
+    throw new Error("Método updatePorcentaje() no implementado");
+  }
+
+  async findByEdificioId(_edificioId) {
+    throw new Error("Método findByEdificioId() no implementado");
+  }
 }
 
 module.exports = EspacioRepository;
