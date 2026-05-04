@@ -67,6 +67,12 @@ class ReservarEspacio {
       throw domainError("Las reservas deben hacerse con al menos 24 horas de antelación", 400);
     }
 
+    // 2c. Validar que la fecha no es fin de semana
+    const diaSemana = new Date(fecha + "T12:00:00").getDay(); // 0=domingo, 6=sábado
+    if (diaSemana === 0 || diaSemana === 6) {
+      throw domainError("No se pueden hacer reservas en fin de semana", 400);
+    }
+
     // 3. Cargar departamento del usuario (una sola vez)
     const deptUsuario = usuario.departamentoId
       ? await this.departamentoRepository.findById(usuario.departamentoId)
