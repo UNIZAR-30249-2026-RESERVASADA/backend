@@ -1,6 +1,7 @@
 class ObtenerReservasVivas {
-  constructor({ reservaRepository }) {
+  constructor({ reservaRepository, usuarioRepository }) {
     this.reservaRepository = reservaRepository;
+    this.usuarioRepository = usuarioRepository;
   }
 
   async execute() {
@@ -24,7 +25,7 @@ class ObtenerReservasVivas {
     const fechaHoy  = `${get("year")}-${get("month")}-${get("day")}`;
     const horaAhora = `${get("hour")}:${get("minute")}`;
 
-    return reservas.map((r) => {
+    return Promise.all(reservas.map(async (r) => {
       // Determinar tipo
       let tipo;
       if (r.fecha < fechaHoy) {
@@ -62,11 +63,16 @@ class ObtenerReservasVivas {
         }
       }
 
+      const usuario = await this.usuarioRepository.findById(r.usuarioId);
+
       return {
-        id:           r.id,
-        espacios:     r.espacios,
-        usuarioId:    r.usuarioId,
-        fecha:        r.fecha,
+        id:            r.id,
+        espacios:      r.espacios,
+        usuarioId:     r.usuarioId,
+        usuarioNombre: usuario?.nombre  || `Usuario #${r.usuarioId}`,
+        usuarioEmail:  usuario?.email   || null,
+        usuarioRol:    usuario?.rol     || null,
+        fecha:         r.fecha,
         horaInicio:   r.horaInicio,
         horaFin:      r.horaFin,
         duracion:     r.duracion,
@@ -77,7 +83,7 @@ class ObtenerReservasVivas {
         puedeEliminar,
         motivoBloqueo,
       };
-    });
+    }));
   }
 }
 
