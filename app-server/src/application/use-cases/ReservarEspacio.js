@@ -44,6 +44,29 @@ class ReservarEspacio {
       throw domainError("Debes seleccionar al menos un espacio", 400);
     }
 
+    // 2b. Validar antelación mínima de 24 horas
+    const ahoraFormatter = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Europe/Madrid",
+      year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", hour12: false,
+    });
+    const partesFecha = ahoraFormatter.formatToParts(new Date());
+    const get         = (type) => partesFecha.find(p => p.type === type)?.value ?? "00";
+    const fechaHoy    = `${get("year")}-${get("month")}-${get("day")}`;
+    const horaAhora   = `${get("hour")}:${get("minute")}`;
+
+    const [rH, rM]      = horaInicio.split(":").map(Number);
+    const [fY, fMo, fD] = fecha.split("-").map(Number);
+    const [hY, hMo, hD] = fechaHoy.split("-").map(Number);
+    const [haH, haMin]  = horaAhora.split(":").map(Number);
+    const inicioMs      = new Date(fY, fMo - 1, fD, rH, rM).getTime();
+    const ahoraMs       = new Date(hY, hMo - 1, hD, haH, haMin).getTime();
+    const horasRestantes = (inicioMs - ahoraMs) / (1000 * 60 * 60);
+
+    if (horasRestantes < 24) {
+      throw domainError("Las reservas deben hacerse con al menos 24 horas de antelación", 400);
+    }
+
     // 3. Cargar departamento del usuario (una sola vez)
     const deptUsuario = usuario.departamentoId
       ? await this.departamentoRepository.findById(usuario.departamentoId)
