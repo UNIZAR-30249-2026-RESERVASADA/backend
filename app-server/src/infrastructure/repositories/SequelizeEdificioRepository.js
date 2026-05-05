@@ -26,10 +26,12 @@ class SequelizeEdificioRepository extends EdificioRepository {
     return this._toEntity(modelo);
   }
 
-  async update(id, { porcentajeOcupacion }) {
+  async update(id, { porcentajeOcupacion, horarioApertura, horarioCierre }) {
     const modelo = await this.EdificioModel.findByPk(id);
     if (!modelo) return null;
     if (porcentajeOcupacion !== undefined) modelo.porcentajeOcupacion = porcentajeOcupacion;
+    if (horarioApertura     !== undefined) modelo.horarioApertura     = horarioApertura;
+    if (horarioCierre       !== undefined) modelo.horarioCierre       = horarioCierre;
     await modelo.save();
     return this._toEntity(modelo);
   }

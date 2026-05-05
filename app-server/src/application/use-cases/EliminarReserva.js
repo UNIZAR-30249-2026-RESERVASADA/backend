@@ -23,9 +23,15 @@ class EliminarReserva {
     }
 
     if (esGerente) {
-      const ahora     = new Date();
-      const fechaHoy  = ahora.toISOString().split("T")[0];
-      const horaAhora = ahora.toTimeString().slice(0, 5);
+      const formatter = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Europe/Madrid",
+        year: "numeric", month: "2-digit", day: "2-digit",
+        hour: "2-digit", minute: "2-digit", hour12: false,
+      });
+      const partes    = formatter.formatToParts(new Date());
+      const get       = (type) => partes.find(p => p.type === type)?.value ?? "00";
+      const fechaHoy  = `${get("year")}-${get("month")}-${get("day")}`;
+      const horaAhora = `${get("hour")}:${get("minute")}`;
 
       const enCurso = reserva.fecha === fechaHoy
         && reserva.horaInicio <= horaAhora
@@ -35,12 +41,17 @@ class EliminarReserva {
         throw domainError("No se puede eliminar una reserva que ya está en curso", 400);
       }
 
-      const inicioReserva  = new Date(`${reserva.fecha}T${reserva.horaInicio}:00`);
-      const horasRestantes = (inicioReserva - ahora) / (1000 * 60 * 60);
+      const [rH, rM]      = reserva.horaInicio.split(":").map(Number);
+      const [fY, fMo, fD] = reserva.fecha.split("-").map(Number);
+      const [hY, hMo, hD] = fechaHoy.split("-").map(Number);
+      const [haH, haMin]  = horaAhora.split(":").map(Number);
+      const inicioMs      = new Date(fY, fMo - 1, fD, rH, rM).getTime();
+      const ahoraMs       = new Date(hY, hMo - 1, hD, haH, haMin).getTime();
+      const horasRestantes = (inicioMs - ahoraMs) / (1000 * 60 * 60);
 
       if (horasRestantes < 24) {
         throw domainError(
-          `No se puede eliminar una reserva con menos de 24 horas de antelación (faltan ${Math.floor(horasRestantes)}h)`,
+          `No se puede eliminar una reserva con menos de 24 horas de antelación (faltan ${Math.floor(horasRestantes)}h ${Math.floor((horasRestantes % 1) * 60)}min)`,
           400
         );
       }

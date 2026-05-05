@@ -44,6 +44,35 @@ class ReservarEspacio {
       throw domainError("Debes seleccionar al menos un espacio", 400);
     }
 
+    // 2b. Validar antelación mínima de 24 horas
+    const ahoraFormatter = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Europe/Madrid",
+      year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", hour12: false,
+    });
+    const partesFecha = ahoraFormatter.formatToParts(new Date());
+    const get         = (type) => partesFecha.find(p => p.type === type)?.value ?? "00";
+    const fechaHoy    = `${get("year")}-${get("month")}-${get("day")}`;
+    const horaAhora   = `${get("hour")}:${get("minute")}`;
+
+    const [rH, rM]      = horaInicio.split(":").map(Number);
+    const [fY, fMo, fD] = fecha.split("-").map(Number);
+    const [hY, hMo, hD] = fechaHoy.split("-").map(Number);
+    const [haH, haMin]  = horaAhora.split(":").map(Number);
+    const inicioMs      = new Date(fY, fMo - 1, fD, rH, rM).getTime();
+    const ahoraMs       = new Date(hY, hMo - 1, hD, haH, haMin).getTime();
+    const horasRestantes = (inicioMs - ahoraMs) / (1000 * 60 * 60);
+
+    if (horasRestantes < 24) {
+      throw domainError("Las reservas deben hacerse con al menos 24 horas de antelación", 400);
+    }
+
+    // 2c. Validar que la fecha no es fin de semana
+    const diaSemana = new Date(fecha + "T12:00:00").getDay(); // 0=domingo, 6=sábado
+    if (diaSemana === 0 || diaSemana === 6) {
+      throw domainError("No se pueden hacer reservas en fin de semana", 400);
+    }
+
     // 3. Cargar departamento del usuario (una sola vez)
     const deptUsuario = usuario.departamentoId
       ? await this.departamentoRepository.findById(usuario.departamentoId)
@@ -166,8 +195,10 @@ class ReservarEspacio {
       const reservasExistentes = await this.reservaRepository.findByEspacioYFecha(espacioId, fecha);
       const solapadas = SolapamientoService.filtrarSolapadas(reserva, reservasExistentes);
       if (solapadas.length > 0) {
+        const horaFinMasTarde = solapadas.reduce((max, r) => r.horaFin > max ? r.horaFin : max, "00:00");
         throw domainError(
-          `El espacio ${espacio.nombre || espacioId} ya está reservado en esa franja horaria`,
+          `El espacio ${espacio.nombre || espacioId} ya está reservado en esa franja horaria. ` +
+          `Disponible a partir de las ${horaFinMasTarde}.`,
           400
         );
       }

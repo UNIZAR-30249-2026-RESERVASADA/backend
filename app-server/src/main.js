@@ -55,7 +55,7 @@ async function main() {
   const login                  = new Login({ usuarioRepository });
   const obtenerReservasUsuario = new ObtenerReservasUsuario({ reservaRepository });
   const cancelarReservaPropia  = new CancelarReservaPropia({ reservaRepository });
-  const obtenerReservasVivas   = new ObtenerReservasVivas({ reservaRepository });
+  const obtenerReservasVivas   = new ObtenerReservasVivas({ reservaRepository, usuarioRepository });
   const eliminarReserva        = new EliminarReserva({ reservaRepository, notificacionRepository });
   const modificarEspacio       = new ModificarEspacio({ espacioRepository, usuarioRepository, reservaRepository, notificacionRepository });
   const modificarEdificio          = new ModificarEdificio({ edificioRepository, espacioRepository, reservaRepository, usuarioRepository, notificacionRepository });
