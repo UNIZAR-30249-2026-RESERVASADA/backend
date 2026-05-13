@@ -152,10 +152,58 @@ class ReservarEspacio {
           espacioAsignadoAInvestigadorVisitante
         );
         if (!puedeReservar) {
-          throw domainError(
-            `Tu rol (${usuario.rol}) no permite reservar espacios de tipo ${espacio.categoria}`,
-            403
-          );
+          const nombreDeptUsuario = deptUsuario?.nombre ?? "sin departamento";
+          const nombreDeptEspacio = deptEspacio?.nombre ?? "sin departamento";
+          const cat = espacio.categoria;
+
+          // Roles que pueden reservar laboratorio con restricción de dpto
+          const rolesConAccesoLab = ["investigador_contratado", "docente_investigador", "tecnico_laboratorio", "investigador_visitante"];
+          // Roles que pueden reservar despacho con restricción de dpto
+          const rolesConAccesoDespacho = ["investigador_contratado", "docente_investigador", "investigador_visitante"];
+
+          let motivo;
+
+          if (cat === "laboratorio") {
+            if (!rolesConAccesoLab.includes(usuario.rol)) {
+              // El rol directamente no puede reservar laboratorios
+              motivo = `Tu rol (${usuario.rol}) no tiene permiso para reservar laboratorios`;
+            } else if (!deptEspacio) {
+              motivo = `Este laboratorio está asignado a la EINA y tu rol (${usuario.rol}) no puede reservarlo`;
+            } else if (!deptUsuario) {
+              motivo = `Este laboratorio pertenece al departamento "${nombreDeptEspacio}" y no tienes departamento asignado`;
+            } else {
+              motivo = `Este laboratorio pertenece al departamento "${nombreDeptEspacio}" y tú eres del departamento "${nombreDeptUsuario}"`;
+            }
+
+          } else if (cat === "despacho") {
+            if (!rolesConAccesoDespacho.includes(usuario.rol)) {
+              motivo = `Tu rol (${usuario.rol}) no tiene permiso para reservar despachos`;
+            } else {
+              const tieneUsuariosAsignados = espacio.usuariosAsignados.length > 0;
+
+              if (tieneUsuariosAsignados && !espacioAsignadoAInvestigadorVisitante) {
+                motivo = `Este despacho está asignado a una persona concreta y no es reservable`;
+              } else if (tieneUsuariosAsignados && espacioAsignadoAInvestigadorVisitante) {
+                if (!deptUsuario) {
+                  motivo = `Este despacho está asignado a un investigador visitante del departamento "${nombreDeptEspacio}" y no tienes departamento asignado`;
+                } else {
+                  motivo = `Este despacho está asignado a un investigador visitante del departamento "${nombreDeptEspacio}" y tú eres del departamento "${nombreDeptUsuario}"`;
+                }
+              } else if (!deptEspacio) {
+                motivo = `Este despacho está asignado a la EINA y tu rol (${usuario.rol}) no puede reservarlo`;
+              } else if (!deptUsuario) {
+                motivo = `Este despacho pertenece al departamento "${nombreDeptEspacio}" y no tienes departamento asignado`;
+              } else {
+                motivo = `Este despacho pertenece al departamento "${nombreDeptEspacio}" y tú eres del departamento "${nombreDeptUsuario}"`;
+              }
+            }
+
+          } else {
+            // aula, seminario, sala comun — problema puramente de rol
+            motivo = `Tu rol (${usuario.rol}) no tiene permiso para reservar espacios de tipo ${cat}`;
+          }
+
+          throw domainError(motivo, 403);
         }
       }
 
@@ -169,7 +217,7 @@ class ReservarEspacio {
           }
         }
         if (!espacio.admiteOcupacion(numPersonas, porcentaje)) {
-          const aforoPermitido = Math.floor((espacio.aforo ?? 0) * porcentaje / 100);
+          const aforoPermitido = Math.ceil((espacio.aforo ?? 0) * porcentaje / 100);
           throw domainError(
             `El número de personas (${numPersonas}) supera el aforo permitido del espacio ${espacio.nombre || espacioId} (${aforoPermitido} plazas con el ${porcentaje}% de ocupación actual)`,
             400

@@ -14,4 +14,5 @@ module.exports = {
   eliminarReserva:              messagingClient.eliminarReserva,
   crearUsuario:                 messagingClient.crearUsuario,
   modificarUsuario:             messagingClient.modificarUsuario,
+  obtenerUsuario:               messagingClient.obtenerUsuario,
 };

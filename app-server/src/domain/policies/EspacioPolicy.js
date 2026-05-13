@@ -1,1 +1,0 @@
-//por ahora no metemos nada aqui porque no hay reglas de negocio complejas, pero lo dejamos preparado para el futuro.

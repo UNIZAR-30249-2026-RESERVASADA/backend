@@ -77,6 +77,11 @@ async function modificarUsuario(usuarioId, cambios, esGerente) {
   return handleResponse(response, "Error modificando el usuario");
 }
 
+async function obtenerUsuario(usuarioId) {
+  const response = await rpcCall(REQUEST_QUEUE, { action: "obtenerUsuario", payload: { usuarioId }, });
+  return handleResponse(response, "Error obteniendo el usuario");
+}
+
 module.exports = {
   modificarEspacio,
   modificarEdificio,
@@ -91,4 +96,5 @@ module.exports = {
   cancelarReservaPropia,
   obtenerReservasVivas,
   eliminarReserva,
+  obtenerUsuario,
 };

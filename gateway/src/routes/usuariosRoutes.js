@@ -4,6 +4,8 @@ const authMiddleware     = require("../middlewares/authMiddleware");
 
 const router = express.Router();
 
+router.get("/usuarios/me", authMiddleware, usuariosController.obtenerUsuario);
+
 /**
  * @swagger
  * /api/usuarios:

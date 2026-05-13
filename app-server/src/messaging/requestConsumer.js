@@ -14,6 +14,7 @@ async function startRequestConsumer({
   marcarNotificacionesLeidas,
   crearUsuario,
   modificarUsuario,
+  obtenerUsuario,
 }) {
   const channel      = await getChannel();
   const requestQueue = process.env.REQUEST_QUEUE || "reservas.requests";
@@ -94,6 +95,11 @@ async function startRequestConsumer({
 
       else if (action === "modificarUsuario") {
         const data = await modificarUsuario.execute(payload);
+        response = { ok: true, data };
+      } 
+
+      else if (action === "obtenerUsuario") {
+        const data = await obtenerUsuario.execute(payload);
         response = { ok: true, data };
       }
 

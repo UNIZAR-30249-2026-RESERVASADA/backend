@@ -22,6 +22,7 @@ const GetNotificaciones              = require("./application/use-cases/GetNotif
 const MarcarNotificacionesLeidas     = require("./application/use-cases/MarcarNotificacionesLeidas");
 const CrearUsuario                   = require("./application/use-cases/CrearUsuario");
 const ModificarUsuario               = require("./application/use-cases/ModificarUsuario");
+const ObtenerUsuario = require("./application/use-cases/ObtenerUsuario");
 const SequelizeNotificacionRepository = require("./infrastructure/repositories/SequelizeNotificacionRepository");
 
 const ReservaPolicy  = require("./domain/policies/ReservaPolicy");
@@ -63,6 +64,7 @@ async function main() {
   const marcarNotificacionesLeidas = new MarcarNotificacionesLeidas({ notificacionRepository });
   const crearUsuario               = new CrearUsuario({ usuarioRepository });
   const modificarUsuario           = new ModificarUsuario({ usuarioRepository, reservaRepository, espacioRepository, notificacionRepository });
+  const obtenerUsuario             = new ObtenerUsuario({ usuarioRepository });
 
   await startRequestConsumer({
     reservarEspacio,
@@ -78,6 +80,7 @@ async function main() {
     marcarNotificacionesLeidas,
     crearUsuario,
     modificarUsuario,
+    obtenerUsuario,
   });
 
   console.log("App-server listo y esperando mensajes...");
