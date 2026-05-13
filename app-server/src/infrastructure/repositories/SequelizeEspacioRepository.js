@@ -13,8 +13,14 @@ class SequelizeEspacioRepository extends EspacioRepository {
   _toEntity(modelo) {
     if (!modelo) return null;
 
-    const usuariosAsignados = (modelo.UsuarioEspacios ?? [])
-      .map((ue) => ue.usuarioId ?? ue.usuario_id);
+    const usuariosAsignados = (modelo.UsuarioEspacios ?? []).map((ue) => {
+      const u = ue.Usuario ?? null;
+      return {
+        id:             Number(ue.usuarioId ?? ue.usuario_id),
+        rol:            u?.rol            ?? null,
+        departamentoId: u?.departamentoId ?? null,
+      };
+    });
 
     return new Espacio({
       gid:               modelo.gid,
@@ -40,7 +46,10 @@ class SequelizeEspacioRepository extends EspacioRepository {
 
   async findById(id) {
     const modelo = await this.EspacioModel.findByPk(id, {
-      include: [{ model: this.UsuarioEspacioModel }],
+      include: [{ 
+        model: this.UsuarioEspacioModel,
+        include: [{ model: this.UsuarioModel, attributes: ["id", "rol", "departamentoId"] }]
+      }],
     });
     return this._toEntity(modelo);
   }
@@ -53,7 +62,10 @@ class SequelizeEspacioRepository extends EspacioRepository {
 
     const modelos = await this.EspacioModel.findAll({
       where,
-      include: [{ model: this.UsuarioEspacioModel }],
+      include: [{ 
+        model: this.UsuarioEspacioModel,
+        include: [{ model: this.UsuarioModel, attributes: ["id", "rol", "departamentoId"] }]
+      }],
     });
     return modelos.map((m) => this._toEntity(m));
   }
@@ -90,7 +102,7 @@ class SequelizeEspacioRepository extends EspacioRepository {
     if (todosLosIds.size > 0) {
       const usuarios = await this.UsuarioModel.findAll({
         where: { id: Array.from(todosLosIds) },
-        attributes: ["id", "nombre", "rol"],
+        attributes: ["id", "nombre", "rol", "departamentoId"], 
       });
       for (const u of usuarios) usuariosPorId[Number(u.id)] = u;
     }
@@ -117,7 +129,7 @@ class SequelizeEspacioRepository extends EspacioRepository {
       usuariosAsignados: (m.UsuarioEspacios ?? []).map((ue) => {
         const uid = Number(ue.usuarioId ?? ue.usuario_id);
         const u   = usuariosPorId[uid];
-        return { id: uid, nombre: u?.nombre ?? null, rol: u?.rol ?? null };
+        return { id: uid, nombre: u?.nombre ?? null, rol: u?.rol ?? null, departamentoId: u?.departamentoId ?? null }; // ← añadir departamentoId
       }),
     }));
   }
@@ -149,7 +161,10 @@ class SequelizeEspacioRepository extends EspacioRepository {
   async findByEdificioId(edificioId) {
     const modelos = await this.EspacioModel.findAll({
       where: { edificioId },
-      include: [{ model: this.UsuarioEspacioModel }],
+      include: [{ 
+        model: this.UsuarioEspacioModel,
+        include: [{ model: this.UsuarioModel, attributes: ["id", "rol", "departamentoId"] }]
+      }],
     });
     return modelos.map(m => this._toEntity(m));
   }
@@ -193,7 +208,10 @@ class SequelizeEspacioRepository extends EspacioRepository {
     }
 
     return this._toEntity(await this.EspacioModel.findByPk(id, {
-      include: [{ model: this.UsuarioEspacioModel }],
+      include: [{ 
+        model: this.UsuarioEspacioModel,
+        include: [{ model: this.UsuarioModel, attributes: ["id", "rol", "departamentoId"] }]
+      }],
     }));
   }
 }

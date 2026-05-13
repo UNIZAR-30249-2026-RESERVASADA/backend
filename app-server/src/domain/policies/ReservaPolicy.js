@@ -56,11 +56,10 @@ class ReservaPolicy {
     }
 
     if (rol.esConserje()) {
-      return categoria.esAula() || categoria.esSeminario() || categoria.esSalaComun();
+      return categoria.esAula() || categoria.esSeminario() || categoria.esSalaComun() || categoria.esLaboratorio();
     }
 
     if (rol.esInvestigadorVisitante()) {
-      if (categoria.esDespacho()) return usuarioEstaAsignado;
       if (categoria.esLaboratorio()) return mismoDepto;
       return categoria.esAula() || categoria.esSeminario() || categoria.esSalaComun();
     }

@@ -91,9 +91,26 @@ class ModificarEspacio {
 
     // Validar asignación
     if (departamentoId !== undefined || asignadoAEina !== undefined || usuariosAsignados !== undefined) {
+      // Calcular valores efectivos tras el cambio
+      const deptEfectivo      = departamentoId    !== undefined ? departamentoId    : espacio.departamentoId;
+      const einaEfectiva      = asignadoAEina     !== undefined ? asignadoAEina     : espacio.asignadoAEina;
+      const usuariosEfectivos = usuariosAsignados !== undefined ? usuariosAsignados : espacio.usuariosAsignados;
+
+      // Garantizar que solo hay un tipo de asignación activo
+      const tieneEina     = !!einaEfectiva;
+      const tieneDpto     = !!deptEfectivo;
+      const tienePersonas = usuariosEfectivos && usuariosEfectivos.length > 0;
+      const tiposActivos  = [tieneEina, tieneDpto, tienePersonas].filter(Boolean).length;
+      if (tiposActivos > 1) {
+        throw domainError(
+          "Un espacio solo puede estar asignado a una cosa a la vez: EINA, un departamento, o una o más personas",
+          400
+        );
+      }
+
       let tipoAsignacion;
-      if (asignadoAEina)                                         tipoAsignacion = "eina";
-      else if (departamentoId)                                   tipoAsignacion = "departamento";
+      if (asignadoAEina)                                          tipoAsignacion = "eina";
+      else if (departamentoId)                                    tipoAsignacion = "departamento";
       else if (usuariosAsignados && usuariosAsignados.length > 0) tipoAsignacion = "persona";
       else                                                        tipoAsignacion = "eina";
 
@@ -106,6 +123,11 @@ class ModificarEspacio {
       }
 
       if (usuariosAsignados && usuariosAsignados.length > 0) {
+
+        if (catVO.esDespacho() && usuariosAsignados.length > 1) {
+          throw domainError("Un despacho solo puede estar asignado a una persona concreta", 400);
+        }
+
         const ROLES_VALIDOS = ["investigador_contratado", "docente_investigador", "investigador_visitante"];
         let hayNoVisitante = false;
 
