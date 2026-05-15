@@ -30,4 +30,14 @@ async function modificarUsuario(req, res, next) {
   }
 }
 
-module.exports = { crearUsuario, modificarUsuario };
+async function obtenerUsuario(req, res, next) {
+  try {
+    const usuarioId = req.user.id;
+    const resultado = await appServerClient.obtenerUsuario(usuarioId);
+    return res.status(200).json(resultado);
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = { crearUsuario, modificarUsuario, obtenerUsuario };

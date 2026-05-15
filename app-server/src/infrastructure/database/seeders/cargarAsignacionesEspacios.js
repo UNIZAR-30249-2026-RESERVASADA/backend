@@ -87,37 +87,37 @@ async function cargarAsignacionesEspacios({ Espacio, Usuario, Departamento, Usua
 
       // CASO O7 — asignado a investigador visitante INF
       case 2:
-        if (visitanteInf && dInf) {
-          await despacho.update({ asignadoAEina: false, departamentoId: dInf.id });
-          await UsuarioEspacio.findOrCreate({
-            where: { usuarioId: visitanteInf.id, espacioId: despacho.gid },
-          });
-          console.log(`    · [O7-INF] Despacho ${despacho.id_espacio || despacho.gid} → visitante INF`);
-        }
-        break;
+      if (visitanteInf) {
+        await despacho.update({ asignadoAEina: false, departamentoId: null });
+        await UsuarioEspacio.findOrCreate({
+          where: { usuarioId: visitanteInf.id, espacioId: despacho.gid },
+        });
+        console.log(`    · [O7-INF] Despacho ${despacho.id_espacio || despacho.gid} → visitante INF`);
+      }
+      break;
 
       // CASO O7 — asignado a investigador visitante ELEC
       case 3:
-        if (visitanteElec && dElec) {
-          await despacho.update({ asignadoAEina: false, departamentoId: dElec.id });
-          await UsuarioEspacio.findOrCreate({
-            where: { usuarioId: visitanteElec.id, espacioId: despacho.gid },
-          });
-          console.log(`    · [O7-ELEC] Despacho ${despacho.id_espacio || despacho.gid} → visitante ELEC`);
-        }
-        break;
+      if (visitanteElec) {
+        await despacho.update({ asignadoAEina: false, departamentoId: null });
+        await UsuarioEspacio.findOrCreate({
+          where: { usuarioId: visitanteElec.id, espacioId: despacho.gid },
+        });
+        console.log(`    · [O7-ELEC] Despacho ${despacho.id_espacio || despacho.gid} → visitante ELEC`);
+      }
+      break;
 
-      // CASO bloqueado — asignado a docente (no visitante, no reservable por nadie salvo gerente)
+      // CASO bloqueado — asignado a docente (no visitante, no reservable por nadie)
       case 4:
         if (docenteInf) {
-          await despacho.update({ asignadoAEina: false, departamentoId: null });
+          await despacho.update({ asignadoAEina: false, departamentoId: null, reservable: false }); // ← añadir reservable: false
           await UsuarioEspacio.findOrCreate({
             where: { usuarioId: docenteInf.id, espacioId: despacho.gid },
           });
           console.log(`    · [BLOQ] Despacho ${despacho.id_espacio || despacho.gid} → docente INF (no reservable)`);
         }
         break;
-    }
+          }
   }
 
   console.log("✓ Asignaciones de espacios creadas con todos los casos de prueba");

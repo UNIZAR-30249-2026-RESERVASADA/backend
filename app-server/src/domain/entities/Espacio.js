@@ -106,7 +106,7 @@ class Espacio {
    */
   admiteOcupacion(numPersonas, porcentajeMaximo = 100) {
     if (!this.aforo) return true;
-    const aforoPermitido = Math.floor(this.aforo * (porcentajeMaximo / 100));
+    const aforoPermitido = Math.ceil(this.aforo * (porcentajeMaximo / 100));
     return numPersonas <= aforoPermitido;
   }
 

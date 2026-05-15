@@ -6,16 +6,16 @@ const CATEGORIAS_VALIDAS = [
   "sala comun",
 ];
 
-// La categoría de reserva es una clasificación flexible sobre el tipo físico del espacio.
-// El gerente puede cambiarla libremente — un laboratorio puede reservarse como aula
-// temporalmente y volver a ser laboratorio después. No hay restricciones entre categorías.
-// La única restricción es que despacho no cambia porque es un tipo físico especial.
+/// La categoría de reserva es una clasificación flexible sobre el tipo físico del espacio.
+// El gerente puede cambiarla según las transiciones permitidas definidas en la tabla de requisitos.
+// Un espacio siempre puede volver a su categoría original (tipo físico).
+// La única categoría que no puede cambiar nunca es despacho.
 const TRANSICIONES_VALIDAS = {
-  aula:        ["seminario", "laboratorio", "sala comun", "despacho"],
-  laboratorio: ["aula", "seminario", "sala comun", "despacho"],
-  seminario:   ["aula", "laboratorio", "sala comun", "despacho"],
+  aula:        ["seminario", "sala comun"],
+  laboratorio: ["aula", "seminario"],
+  seminario:   ["aula", "sala comun"],
   despacho:    [],
-  "sala comun":["aula", "seminario", "laboratorio", "despacho"],
+  "sala comun":["aula", "seminario"],
 };
 
 // Tipos de asignación permitidos por categoría según el enunciado C4

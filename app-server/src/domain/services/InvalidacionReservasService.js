@@ -41,7 +41,7 @@ class InvalidacionReservasService {
 
       // Caso 2 — porcentaje de ocupación
       if (!motivo && nuevoPorcentaje !== null && nuevoPorcentaje !== undefined && aforo) {
-        const aforoPermitido = Math.floor(aforo * (nuevoPorcentaje / 100));
+        const aforoPermitido = Math.ceil(aforo * (nuevoPorcentaje / 100));
         const espacioReserva = reserva.espacios.find(e => Number(e.espacioId) === Number(espacioId));
         const numPersonas    = espacioReserva?.numPersonas ?? null;
         console.log(`[Invalidacion] Reserva ${reserva.id} — porcentaje: aforo=${aforo}, pct=${nuevoPorcentaje}, permitido=${aforoPermitido}, personas=${numPersonas}, cancela=${numPersonas > aforoPermitido}`);

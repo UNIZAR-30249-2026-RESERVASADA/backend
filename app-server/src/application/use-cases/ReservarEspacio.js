@@ -129,15 +129,21 @@ class ReservarEspacio {
 
       // O7: alguno de los usuarios asignados al espacio es investigador visitante
       let espacioAsignadoAInvestigadorVisitante = false;
-      if (espacio.usuariosAsignados.length > 0) {
-        for (const uid of espacio.usuariosAsignados) {
-          const usuarioAsignado = await this.usuarioRepository.findById(uid);
-          if (usuarioAsignado?.rol === "investigador_visitante") {
-            espacioAsignadoAInvestigadorVisitante = true;
-            break;
-          }
+      let deptVisitanteId = null;
+      for (const asignado of espacio.usuariosAsignados) {
+        if (asignado.rol === "investigador_visitante") {
+          espacioAsignadoAInvestigadorVisitante = true;
+          deptVisitanteId = asignado.departamentoId ?? null;
+          break;
         }
       }
+
+      // Si hay visitante asignado, usar su departamento para comparar en la policy
+      const deptEspacioParaPolicy = deptEspacio ?? (
+        deptVisitanteId
+          ? await this.departamentoRepository.findById(deptVisitanteId)
+          : null
+      );
 
       // Gerente puede reservar cualquier espacio reservable
       const esGerente = usuario.esGerente === true;
@@ -147,15 +153,63 @@ class ReservarEspacio {
           usuario.rol,
           espacio.categoria,
           deptUsuario,
-          deptEspacio,
+          deptEspacioParaPolicy,
           usuarioEstaAsignado,
           espacioAsignadoAInvestigadorVisitante
         );
         if (!puedeReservar) {
-          throw domainError(
-            `Tu rol (${usuario.rol}) no permite reservar espacios de tipo ${espacio.categoria}`,
-            403
-          );
+          const nombreDeptUsuario = deptUsuario?.nombre ?? "sin departamento";
+          const nombreDeptEspacio = deptEspacioParaPolicy?.nombre ?? "sin departamento";
+          const cat = espacio.categoria;
+
+          // Roles que pueden reservar laboratorio con restricción de dpto
+          const rolesConAccesoLab = ["investigador_contratado", "docente_investigador", "tecnico_laboratorio", "investigador_visitante"];
+          // Roles que pueden reservar despacho con restricción de dpto
+          const rolesConAccesoDespacho = ["investigador_contratado", "docente_investigador"];
+
+          let motivo;
+
+          if (cat === "laboratorio") {
+            if (!rolesConAccesoLab.includes(usuario.rol)) {
+              // El rol directamente no puede reservar laboratorios
+              motivo = `Tu rol (${usuario.rol}) no tiene permiso para reservar laboratorios`;
+            } else if (!deptEspacioParaPolicy) {
+              motivo = `Este laboratorio está asignado a la EINA y tu rol (${usuario.rol}) no puede reservarlo`;
+            } else if (!deptUsuario) {
+              motivo = `Este laboratorio pertenece al departamento "${nombreDeptEspacio}" y no tienes departamento asignado`;
+            } else {
+              motivo = `Este laboratorio pertenece al departamento "${nombreDeptEspacio}" y tú eres del departamento "${nombreDeptUsuario}"`;
+            }
+
+          } else if (cat === "despacho") {
+            if (!rolesConAccesoDespacho.includes(usuario.rol)) {
+              motivo = `Tu rol (${usuario.rol}) no tiene permiso para reservar despachos`;
+            } else {
+              const tieneUsuariosAsignados = espacio.usuariosAsignados.length > 0;
+
+              if (tieneUsuariosAsignados && !espacioAsignadoAInvestigadorVisitante) {
+                motivo = `Este despacho está asignado a una persona concreta y no es reservable`;
+              } else if (tieneUsuariosAsignados && espacioAsignadoAInvestigadorVisitante) {
+                if (!deptUsuario) {
+                  motivo = `Este despacho está asignado a un investigador visitante del departamento "${nombreDeptEspacio}" y no tienes departamento asignado`;
+                } else {
+                  motivo = `Este despacho está asignado a un investigador visitante del departamento "${nombreDeptEspacio}" y tú eres del departamento "${nombreDeptUsuario}"`;
+                }
+              } else if (!deptEspacioParaPolicy) {
+                motivo = `Este despacho está asignado a la EINA y tu rol (${usuario.rol}) no puede reservarlo`;
+              } else if (!deptUsuario) {
+                motivo = `Este despacho pertenece al departamento "${nombreDeptEspacio}" y no tienes departamento asignado`;
+              } else {
+                motivo = `Este despacho pertenece al departamento "${nombreDeptEspacio}" y tú eres del departamento "${nombreDeptUsuario}"`;
+              }
+            }
+
+          } else {
+            // aula, seminario, sala comun — problema puramente de rol
+            motivo = `Tu rol (${usuario.rol}) no tiene permiso para reservar espacios de tipo ${cat}`;
+          }
+
+          throw domainError(motivo, 403);
         }
       }
 
@@ -169,7 +223,7 @@ class ReservarEspacio {
           }
         }
         if (!espacio.admiteOcupacion(numPersonas, porcentaje)) {
-          const aforoPermitido = Math.floor((espacio.aforo ?? 0) * porcentaje / 100);
+          const aforoPermitido = Math.ceil((espacio.aforo ?? 0) * porcentaje / 100);
           throw domainError(
             `El número de personas (${numPersonas}) supera el aforo permitido del espacio ${espacio.nombre || espacioId} (${aforoPermitido} plazas con el ${porcentaje}% de ocupación actual)`,
             400
@@ -195,10 +249,12 @@ class ReservarEspacio {
       const reservasExistentes = await this.reservaRepository.findByEspacioYFecha(espacioId, fecha);
       const solapadas = SolapamientoService.filtrarSolapadas(reserva, reservasExistentes);
       if (solapadas.length > 0) {
-        const horaFinMasTarde = solapadas.reduce((max, r) => r.horaFin > max ? r.horaFin : max, "00:00");
+        const franjasOcupadas = reservasExistentes
+          .map(r => `${r.horaInicio}-${r.horaFin}`)
+          .join(", ");
         throw domainError(
           `El espacio ${espacio.nombre || espacioId} ya está reservado en esa franja horaria. ` +
-          `Disponible a partir de las ${horaFinMasTarde}.`,
+          `Franjas ocupadas: ${franjasOcupadas}.`,
           400
         );
       }

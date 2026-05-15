@@ -17,16 +17,20 @@
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
+    "dotenv": "^17.4.2",
     "jest": "^30.3.0",
     "supertest": "^7.2.2"
   },
   "jest": {
     "testEnvironment": "node",
+    "testMatch": ["**/tests/integration/**/*.test.js"],
+    "setupFiles": ["./jest.setup.js"],
     "collectCoverageFrom": [
-      "src/**/*.js",
-      "!src/server.js",
-      "!src/config/swagger.js",
-      "!src/services/appServerHttpClient.js"
+      "src/controllers/**/*.js",
+      "src/middlewares/**/*.js",
+      "src/dtos/**/*.js",
+      "src/routes/**/*.js",
+      "src/services/jwtService.js"
     ]
   }
 }
