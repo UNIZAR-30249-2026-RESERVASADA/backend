@@ -56,3 +56,6 @@ jobs:
 
       - name: Ejecutar tests gateway
         run: npm run test:coverage
+        env:
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_EXPIRES_IN: ${{ secrets.JWT_EXPIRES_IN }}
