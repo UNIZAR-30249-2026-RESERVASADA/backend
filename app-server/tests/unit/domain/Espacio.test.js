@@ -163,12 +163,12 @@ describe("Espacio", () => {
   // ─────────────────────────────────────────────
   describe("estaAsignadoA", () => {
     test("devuelve true si el usuario está asignado", () => {
-      const e = crearEspacio({ usuariosAsignados: [{ id: 3, rol: "docente_investigador", departamentoId: 1 }] });
+      const e = crearEspacio({ usuariosAsignados: [3] });
       expect(e.estaAsignadoA(3)).toBe(true);
     });
 
     test("devuelve false si el usuario no está asignado", () => {
-      const e = crearEspacio({ usuariosAsignados: [{ id: 3, rol: "docente_investigador", departamentoId: 1 }] });
+      const e = crearEspacio({ usuariosAsignados: [3] });
       expect(e.estaAsignadoA(99)).toBe(false);
     });
 
@@ -178,7 +178,7 @@ describe("Espacio", () => {
     });
 
     test("funciona con string de id", () => {
-      const e = crearEspacio({ usuariosAsignados: [{ id: 3, rol: "docente_investigador", departamentoId: 1 }] });
+      const e = crearEspacio({ usuariosAsignados: [3] });
       expect(e.estaAsignadoA("3")).toBe(true);
     });
   });

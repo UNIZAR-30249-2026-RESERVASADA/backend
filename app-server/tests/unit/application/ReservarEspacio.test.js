@@ -1,3 +1,4 @@
+const Reserva = require("../../../src/domain/entities/Reserva");
 const ReservarEspacio = require("../../../src/application/use-cases/ReservarEspacio");
 const ReservaPolicy   = require("../../../src/domain/policies/ReservaPolicy");
 const ReservaFactory  = require("../../../src/domain/factories/ReservaFactory");
@@ -323,30 +324,32 @@ describe("ReservarEspacio", () => {
   // ─────────────────────────────────────────────
   describe("Validaciones de solapamiento", () => {
     test("lanza 400 si hay solapamiento con reserva existente", async () => {
-      const reservaExistente = {
+      const reservaExistente = new Reserva({
         id:         99,
-        espacios:   [{ espacioId: 5344, numPersonas: null }],
+        espacios:   [{ espacioId: 5344, numPersonas: 5 }],
         usuarioId:  2,
         fecha:      "2026-05-21",
         horaInicio: "10:00",
         duracion:   60,
-        horaFin:    "11:00",
+        tipoUso:    "docencia",
         estado:     "aceptada",
-        seSOlapaConOtra: () => true,
-        periodo: {
-          fecha:      "2026-05-21",
-          horaInicio: "10:00",
-          duracion:   60,
-          horaFin:    "11:00",
-          seSOlapaConOtro: () => true,
-        },
-      };
+      });
 
-      const casoDeUso = crearCasoDeUso({
+      const repos = crearRepositorios({
         reservaRepository: {
           findByEspacioYFecha: jest.fn().mockResolvedValue([reservaExistente]),
           save:               jest.fn(),
         },
+      });
+
+      repos.espacioRepository.findById
+        .mockResolvedValueOnce(crearEspacio()) // paso 4
+        .mockResolvedValueOnce(crearEspacio()); // paso 6
+
+      const casoDeUso = new ReservarEspacio({
+        ...repos,
+        reservaFactory: new ReservaFactory(),
+        ReservaPolicy,
       });
 
       await expect(casoDeUso.execute(payloadBase)).rejects.toMatchObject({ statusCode: 400 });
