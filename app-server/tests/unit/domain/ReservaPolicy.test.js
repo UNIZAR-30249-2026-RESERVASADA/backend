@@ -1,279 +1,233 @@
 const ReservaPolicy = require("../../../src/domain/policies/ReservaPolicy");
 
+// Helper para crear departamentos mock
+function dept(id) {
+  return {
+    id,
+    esMismoDepartamento: (otro) => otro && String(otro.id) === String(id),
+  };
+}
+
+const DEPT_INF  = dept(1);
+const DEPT_ELEC = dept(2);
+
 describe("ReservaPolicy.puedeReservar", () => {
-  test("devuelve false si no hay rolUsuario", () => {
-    expect(
-      ReservaPolicy.puedeReservar(null, "aula", null, null)
-    ).toBe(false);
-  });
 
-  test("devuelve false si no hay categoriaEspacio", () => {
-    expect(
-      ReservaPolicy.puedeReservar("estudiante", null, null, null)
-    ).toBe(false);
-  });
-
-  describe("rol estudiante", () => {
-    test("puede reservar sala común", () => {
-      expect(
-        ReservaPolicy.puedeReservar("estudiante", "sala común", null, null)
-      ).toBe(true);
+  // ─────────────────────────────────────────────
+  // GERENTE
+  // ─────────────────────────────────────────────
+  describe("Gerente", () => {
+    test("puede reservar aula", () => {
+      expect(ReservaPolicy.puedeReservar("gerente", "aula")).toBe(true);
     });
+    test("puede reservar laboratorio", () => {
+      expect(ReservaPolicy.puedeReservar("gerente", "laboratorio")).toBe(true);
+    });
+    test("puede reservar despacho", () => {
+      expect(ReservaPolicy.puedeReservar("gerente", "despacho")).toBe(true);
+    });
+    test("puede reservar seminario", () => {
+      expect(ReservaPolicy.puedeReservar("gerente", "seminario")).toBe(true);
+    });
+    test("puede reservar sala comun", () => {
+      expect(ReservaPolicy.puedeReservar("gerente", "sala comun")).toBe(true);
+    });
+  });
 
+  // ─────────────────────────────────────────────
+  // ESTUDIANTE
+  // ─────────────────────────────────────────────
+  describe("Estudiante", () => {
+    test("puede reservar sala comun", () => {
+      expect(ReservaPolicy.puedeReservar("estudiante", "sala comun")).toBe(true);
+    });
     test("no puede reservar aula", () => {
-      expect(
-        ReservaPolicy.puedeReservar("estudiante", "aula", null, null)
-      ).toBe(false);
+      expect(ReservaPolicy.puedeReservar("estudiante", "aula")).toBe(false);
     });
-  });
-
-  describe("rol investigador_contratado", () => {
-    test("puede reservar aula", () => {
-      expect(
-        ReservaPolicy.puedeReservar("investigador_contratado", "aula", 1, null)
-      ).toBe(true);
-    });
-
-    test("puede reservar seminario", () => {
-      expect(
-        ReservaPolicy.puedeReservar("investigador_contratado", "seminario", 1, null)
-      ).toBe(true);
-    });
-
-    test("puede reservar sala común", () => {
-      expect(
-        ReservaPolicy.puedeReservar("investigador_contratado", "sala común", 1, null)
-      ).toBe(true);
-    });
-
-    test("puede reservar laboratorio de su departamento", () => {
-      expect(
-        ReservaPolicy.puedeReservar("investigador_contratado", "laboratorio", 1, 1)
-      ).toBe(true);
-    });
-
-    test("no puede reservar laboratorio de otro departamento", () => {
-      expect(
-        ReservaPolicy.puedeReservar("investigador_contratado", "laboratorio", 1, 2)
-      ).toBe(false);
-    });
-
-    test("no puede reservar laboratorio si el espacio no tiene departamento", () => {
-      expect(
-        ReservaPolicy.puedeReservar("investigador_contratado", "laboratorio", 1, null)
-      ).toBe(false);
-    });
-
-    test("puede reservar despacho de su departamento", () => {
-      expect(
-        ReservaPolicy.puedeReservar("investigador_contratado", "despacho", 1, 1)
-      ).toBe(true);
-    });
-
-    test("no puede reservar despacho de otro departamento", () => {
-      expect(
-        ReservaPolicy.puedeReservar("investigador_contratado", "despacho", 1, 2)
-      ).toBe(false);
-    });
-  });
-
-  describe("rol docente_investigador", () => {
-    test("puede reservar aula", () => {
-      expect(
-        ReservaPolicy.puedeReservar("docente_investigador", "aula", 1, null)
-      ).toBe(true);
-    });
-
-    test("puede reservar seminario", () => {
-      expect(
-        ReservaPolicy.puedeReservar("docente_investigador", "seminario", 1, null)
-      ).toBe(true);
-    });
-
-    test("puede reservar sala común", () => {
-      expect(
-        ReservaPolicy.puedeReservar("docente_investigador", "sala común", 1, null)
-      ).toBe(true);
-    });
-
-    test("puede reservar laboratorio de su departamento", () => {
-      expect(
-        ReservaPolicy.puedeReservar("docente_investigador", "laboratorio", 1, 1)
-      ).toBe(true);
-    });
-
-    test("no puede reservar laboratorio de otro departamento", () => {
-      expect(
-        ReservaPolicy.puedeReservar("docente_investigador", "laboratorio", 1, 2)
-      ).toBe(false);
-    });
-
-    test("no puede reservar laboratorio si el espacio no tiene departamento", () => {
-      expect(
-        ReservaPolicy.puedeReservar("docente_investigador", "laboratorio", 1, null)
-      ).toBe(false);
-    });
-
-    test("puede reservar despacho de su departamento", () => {
-      expect(
-        ReservaPolicy.puedeReservar("docente_investigador", "despacho", 1, 1)
-      ).toBe(true);
-    });
-
-    test("no puede reservar despacho de otro departamento", () => {
-      expect(
-        ReservaPolicy.puedeReservar("docente_investigador", "despacho", 1, 2)
-      ).toBe(false);
-    });
-  });
-
-  describe("rol tecnico_laboratorio", () => {
-    test("puede reservar laboratorio de su departamento", () => {
-      expect(
-        ReservaPolicy.puedeReservar("tecnico_laboratorio", "laboratorio", 1, 1)
-      ).toBe(true);
-    });
-
-    test("no puede reservar laboratorio de otro departamento", () => {
-      expect(
-        ReservaPolicy.puedeReservar("tecnico_laboratorio", "laboratorio", 1, 2)
-      ).toBe(false);
-    });
-
-    test("no puede reservar laboratorio si el espacio no tiene departamento", () => {
-      expect(
-        ReservaPolicy.puedeReservar("tecnico_laboratorio", "laboratorio", 1, null)
-      ).toBe(false);
-    });
-
-    test("no puede reservar aula", () => {
-      expect(
-        ReservaPolicy.puedeReservar("tecnico_laboratorio", "aula", 1, null)
-      ).toBe(false);
-    });
-  });
-
-  describe("rol conserje", () => {
-    test("puede reservar aula", () => {
-      expect(
-        ReservaPolicy.puedeReservar("conserje", "aula", null, null)
-      ).toBe(true);
-    });
-
-    test("puede reservar seminario", () => {
-      expect(
-        ReservaPolicy.puedeReservar("conserje", "seminario", null, null)
-      ).toBe(true);
-    });
-
-    test("puede reservar sala común", () => {
-      expect(
-        ReservaPolicy.puedeReservar("conserje", "sala común", null, null)
-      ).toBe(true);
-    });
-
     test("no puede reservar laboratorio", () => {
-      expect(
-        ReservaPolicy.puedeReservar("conserje", "laboratorio", null, 1)
-      ).toBe(false);
+      expect(ReservaPolicy.puedeReservar("estudiante", "laboratorio")).toBe(false);
     });
-  });
-
-  describe("rol investigador_visitante", () => {
-    test("puede reservar aula", () => {
-      expect(
-        ReservaPolicy.puedeReservar("investigador_visitante", "aula", 1, null)
-      ).toBe(true);
-    });
-
-    test("puede reservar seminario", () => {
-      expect(
-        ReservaPolicy.puedeReservar("investigador_visitante", "seminario", 1, null)
-      ).toBe(true);
-    });
-
-    test("puede reservar sala común", () => {
-      expect(
-        ReservaPolicy.puedeReservar("investigador_visitante", "sala común", 1, null)
-      ).toBe(true);
-    });
-
-    test("puede reservar laboratorio de su departamento", () => {
-      expect(
-        ReservaPolicy.puedeReservar("investigador_visitante", "laboratorio", 1, 1)
-      ).toBe(true);
-    });
-
-    test("no puede reservar laboratorio de otro departamento", () => {
-      expect(
-        ReservaPolicy.puedeReservar("investigador_visitante", "laboratorio", 1, 2)
-      ).toBe(false);
-    });
-
-    test("no puede reservar laboratorio si el espacio no tiene departamento", () => {
-      expect(
-        ReservaPolicy.puedeReservar("investigador_visitante", "laboratorio", 1, null)
-      ).toBe(false);
-    });
-
     test("no puede reservar despacho", () => {
-      expect(
-        ReservaPolicy.puedeReservar("investigador_visitante", "despacho", 1, 1)
-      ).toBe(false);
+      expect(ReservaPolicy.puedeReservar("estudiante", "despacho")).toBe(false);
+    });
+    test("no puede reservar seminario", () => {
+      expect(ReservaPolicy.puedeReservar("estudiante", "seminario")).toBe(false);
     });
   });
 
-  describe("rol gerente", () => {
-    test("puede reservar cualquier espacio", () => {
-      expect(
-        ReservaPolicy.puedeReservar("gerente", "despacho", null, 2)
-      ).toBe(true);
+  // ─────────────────────────────────────────────
+  // CONSERJE
+  // ─────────────────────────────────────────────
+  describe("Conserje", () => {
+    test("puede reservar aula", () => {
+      expect(ReservaPolicy.puedeReservar("conserje", "aula")).toBe(true);
+    });
+    test("puede reservar seminario", () => {
+      expect(ReservaPolicy.puedeReservar("conserje", "seminario")).toBe(true);
+    });
+    test("puede reservar sala comun", () => {
+      expect(ReservaPolicy.puedeReservar("conserje", "sala comun")).toBe(true);
+    });
+    test("puede reservar laboratorio", () => {
+      expect(ReservaPolicy.puedeReservar("conserje", "laboratorio")).toBe(true);
+    });
+    test("no puede reservar despacho", () => {
+      expect(ReservaPolicy.puedeReservar("conserje", "despacho")).toBe(false);
     });
   });
 
-  test("devuelve false para rol desconocido", () => {
-    expect(
-      ReservaPolicy.puedeReservar("rol_raro", "aula", null, null)
-    ).toBe(false);
-  });
-});
-
-describe("ReservaPolicy.obtenerRestriccionesUI", () => {
-  test("devuelve restricciones para estudiante", () => {
-    const result = ReservaPolicy.obtenerRestriccionesUI("estudiante");
-
-    expect(result.rol).toBe("estudiante");
-    expect(result.puedeReservarTodo).toBe(false);
-    expect(result.categoriasPermitidas).toContain("sala común");
-    expect(result.categoriasConRestriccionDepartamento).toEqual([]);
-    expect(result.mensaje).toContain("Solo Salas comunes");
-  });
-
-  test("devuelve restricciones para docente_investigador", () => {
-    const result = ReservaPolicy.obtenerRestriccionesUI("docente_investigador");
-
-    expect(result.rol).toBe("docente_investigador");
-    expect(result.puedeReservarTodo).toBe(false);
-    expect(result.categoriasPermitidas).toContain("laboratorio");
-    expect(result.categoriasPermitidas).toContain("despacho");
-    expect(result.categoriasConRestriccionDepartamento).toContain("laboratorio");
-    expect(result.categoriasConRestriccionDepartamento).toContain("despacho");
+  // ─────────────────────────────────────────────
+  // TÉCNICO DE LABORATORIO
+  // ─────────────────────────────────────────────
+  describe("Técnico de laboratorio", () => {
+    test("puede reservar laboratorio de su departamento", () => {
+      expect(ReservaPolicy.puedeReservar("tecnico_laboratorio", "laboratorio", DEPT_INF, DEPT_INF)).toBe(true);
+    });
+    test("no puede reservar laboratorio de otro departamento", () => {
+      expect(ReservaPolicy.puedeReservar("tecnico_laboratorio", "laboratorio", DEPT_INF, DEPT_ELEC)).toBe(false);
+    });
+    test("no puede reservar laboratorio de la EINA", () => {
+      expect(ReservaPolicy.puedeReservar("tecnico_laboratorio", "laboratorio", DEPT_INF, null)).toBe(false);
+    });
+    test("puede reservar seminario", () => {
+      expect(ReservaPolicy.puedeReservar("tecnico_laboratorio", "seminario")).toBe(true);
+    });
+    test("puede reservar sala comun", () => {
+      expect(ReservaPolicy.puedeReservar("tecnico_laboratorio", "sala comun")).toBe(true);
+    });
+    test("no puede reservar aula", () => {
+      expect(ReservaPolicy.puedeReservar("tecnico_laboratorio", "aula")).toBe(false);
+    });
+    test("no puede reservar despacho", () => {
+      expect(ReservaPolicy.puedeReservar("tecnico_laboratorio", "despacho", DEPT_INF, DEPT_INF)).toBe(false);
+    });
   });
 
-  test("devuelve restricciones para gerente", () => {
-    const result = ReservaPolicy.obtenerRestriccionesUI("gerente");
-
-    expect(result.rol).toBe("gerente");
-    expect(result.puedeReservarTodo).toBe(true);
-    expect(result.mensaje).toContain("cualquier espacio");
+  // ─────────────────────────────────────────────
+  // INVESTIGADOR CONTRATADO
+  // ─────────────────────────────────────────────
+  describe("Investigador contratado", () => {
+    test("puede reservar aula", () => {
+      expect(ReservaPolicy.puedeReservar("investigador_contratado", "aula")).toBe(true);
+    });
+    test("puede reservar seminario", () => {
+      expect(ReservaPolicy.puedeReservar("investigador_contratado", "seminario")).toBe(true);
+    });
+    test("puede reservar sala comun", () => {
+      expect(ReservaPolicy.puedeReservar("investigador_contratado", "sala comun")).toBe(true);
+    });
+    test("puede reservar laboratorio de su departamento", () => {
+      expect(ReservaPolicy.puedeReservar("investigador_contratado", "laboratorio", DEPT_INF, DEPT_INF)).toBe(true);
+    });
+    test("no puede reservar laboratorio de otro departamento", () => {
+      expect(ReservaPolicy.puedeReservar("investigador_contratado", "laboratorio", DEPT_INF, DEPT_ELEC)).toBe(false);
+    });
+    test("no puede reservar laboratorio de la EINA", () => {
+      expect(ReservaPolicy.puedeReservar("investigador_contratado", "laboratorio", DEPT_INF, null)).toBe(false);
+    });
+    // O3 — despacho asignado a departamento
+    test("puede reservar despacho de su departamento (O3)", () => {
+      expect(ReservaPolicy.puedeReservar("investigador_contratado", "despacho", DEPT_INF, DEPT_INF)).toBe(true);
+    });
+    test("no puede reservar despacho de otro departamento (O3)", () => {
+      expect(ReservaPolicy.puedeReservar("investigador_contratado", "despacho", DEPT_INF, DEPT_ELEC)).toBe(false);
+    });
+    // O7 — despacho asignado a investigador visitante
+    test("puede reservar despacho con visitante de su departamento (O7)", () => {
+      expect(ReservaPolicy.puedeReservar("investigador_contratado", "despacho", DEPT_INF, DEPT_INF, false, true)).toBe(true);
+    });
+    test("no puede reservar despacho con visitante de otro departamento (O7)", () => {
+      expect(ReservaPolicy.puedeReservar("investigador_contratado", "despacho", DEPT_INF, DEPT_ELEC, false, true)).toBe(false);
+    });
+    // Despacho asignado a persona no visitante — bloqueado
+    test("no puede reservar despacho asignado a persona no visitante", () => {
+      expect(ReservaPolicy.puedeReservar("investigador_contratado", "despacho", DEPT_INF, null, false, false)).toBe(false);
+    });
   });
 
-  test("devuelve restricciones por defecto para rol desconocido", () => {
-    const result = ReservaPolicy.obtenerRestriccionesUI("inventado");
+  // ─────────────────────────────────────────────
+  // DOCENTE INVESTIGADOR
+  // ─────────────────────────────────────────────
+  describe("Docente investigador", () => {
+    test("puede reservar aula", () => {
+      expect(ReservaPolicy.puedeReservar("docente_investigador", "aula")).toBe(true);
+    });
+    test("puede reservar seminario", () => {
+      expect(ReservaPolicy.puedeReservar("docente_investigador", "seminario")).toBe(true);
+    });
+    test("puede reservar sala comun", () => {
+      expect(ReservaPolicy.puedeReservar("docente_investigador", "sala comun")).toBe(true);
+    });
+    test("puede reservar laboratorio de su departamento", () => {
+      expect(ReservaPolicy.puedeReservar("docente_investigador", "laboratorio", DEPT_INF, DEPT_INF)).toBe(true);
+    });
+    test("no puede reservar laboratorio de otro departamento", () => {
+      expect(ReservaPolicy.puedeReservar("docente_investigador", "laboratorio", DEPT_INF, DEPT_ELEC)).toBe(false);
+    });
+    test("no puede reservar laboratorio de la EINA", () => {
+      expect(ReservaPolicy.puedeReservar("docente_investigador", "laboratorio", DEPT_INF, null)).toBe(false);
+    });
+    // O3
+    test("puede reservar despacho de su departamento (O3)", () => {
+      expect(ReservaPolicy.puedeReservar("docente_investigador", "despacho", DEPT_INF, DEPT_INF)).toBe(true);
+    });
+    test("no puede reservar despacho de otro departamento (O3)", () => {
+      expect(ReservaPolicy.puedeReservar("docente_investigador", "despacho", DEPT_INF, DEPT_ELEC)).toBe(false);
+    });
+    // O7
+    test("puede reservar despacho con visitante de su departamento (O7)", () => {
+      expect(ReservaPolicy.puedeReservar("docente_investigador", "despacho", DEPT_INF, DEPT_INF, false, true)).toBe(true);
+    });
+    test("no puede reservar despacho con visitante de otro departamento (O7)", () => {
+      expect(ReservaPolicy.puedeReservar("docente_investigador", "despacho", DEPT_INF, DEPT_ELEC, false, true)).toBe(false);
+    });
+    test("no puede reservar despacho asignado a persona no visitante", () => {
+      expect(ReservaPolicy.puedeReservar("docente_investigador", "despacho", DEPT_INF, null, false, false)).toBe(false);
+    });
+  });
 
-    expect(result.rol).toBe("inventado");
-    expect(result.puedeReservarTodo).toBe(false);
-    expect(result.categoriasPermitidas).toEqual([]);
-    expect(result.mensaje).toBe("Sin permisos definidos");
+  // ─────────────────────────────────────────────
+  // INVESTIGADOR VISITANTE
+  // ─────────────────────────────────────────────
+  describe("Investigador visitante", () => {
+    test("puede reservar aula", () => {
+      expect(ReservaPolicy.puedeReservar("investigador_visitante", "aula")).toBe(true);
+    });
+    test("puede reservar seminario", () => {
+      expect(ReservaPolicy.puedeReservar("investigador_visitante", "seminario")).toBe(true);
+    });
+    test("puede reservar sala comun", () => {
+      expect(ReservaPolicy.puedeReservar("investigador_visitante", "sala comun")).toBe(true);
+    });
+    test("puede reservar laboratorio de su departamento", () => {
+      expect(ReservaPolicy.puedeReservar("investigador_visitante", "laboratorio", DEPT_INF, DEPT_INF)).toBe(true);
+    });
+    test("no puede reservar laboratorio de otro departamento", () => {
+      expect(ReservaPolicy.puedeReservar("investigador_visitante", "laboratorio", DEPT_INF, DEPT_ELEC)).toBe(false);
+    });
+    test("no puede reservar laboratorio de la EINA", () => {
+      expect(ReservaPolicy.puedeReservar("investigador_visitante", "laboratorio", DEPT_INF, null)).toBe(false);
+    });
+    test("no puede reservar despacho", () => {
+      expect(ReservaPolicy.puedeReservar("investigador_visitante", "despacho", DEPT_INF, DEPT_INF, false, false)).toBe(false);
+    });
+    test("no puede reservar despacho aunque esté asignado a él", () => {
+      expect(ReservaPolicy.puedeReservar("investigador_visitante", "despacho", DEPT_INF, null, true, true)).toBe(false);
+    });
+  });
+
+  // ─────────────────────────────────────────────
+  // CASOS INVÁLIDOS
+  // ─────────────────────────────────────────────
+  describe("Casos inválidos", () => {
+    test("devuelve false si rol es null", () => {
+      expect(ReservaPolicy.puedeReservar(null, "aula")).toBe(false);
+    });
+    test("devuelve false si categoria es null", () => {
+      expect(ReservaPolicy.puedeReservar("estudiante", null)).toBe(false);
+    });
+    test("devuelve false si ambos son null", () => {
+      expect(ReservaPolicy.puedeReservar(null, null)).toBe(false);
+    });
   });
 });

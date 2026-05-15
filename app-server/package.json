@@ -19,15 +19,13 @@
   "devDependencies": {
     "jest": "^30.3.0"
   },
-  "jest": {
+ "jest": {
     "testEnvironment": "node",
+    "testMatch": ["**/tests/unit/**/*.test.js"],
     "collectCoverageFrom": [
       "src/application/**/*.js",
       "src/domain/**/*.js",
-      "src/infrastructure/repositories/**/*.js",
-      "!src/main.js",
-      "!src/infrastructure/database/**/*.js",
-      "!src/domain/exceptions/**/*.js"
+      "!src/domain/repositories/**/*.js"
     ]
   }
 }

@@ -22,6 +22,7 @@ class CrearUsuario {
    * Precondición: esGerente es true
    * Precondición: email es único en el sistema
    * Precondición: rol es un valor válido
+   * Precondición: si esGerente es true, rol debe ser docente_investigador o null (gerente puro)
    * Postcondición: el usuario queda persistido en el sistema
    */
   async execute({ nombre, email, contrasenia, rol, departamentoId, nuevoEsGerente, esGerente }) {
@@ -33,6 +34,14 @@ class CrearUsuario {
     // Verificar email único
     const existente = await this.usuarioRepository.findByEmail(email);
     if (existente) throw domainError(`Ya existe un usuario con el email ${email}`, 409);
+
+    // El flag esGerente solo puede activarse junto al rol docente_investigador o sin rol (gerente puro)
+    if (nuevoEsGerente && rol !== null && rol !== undefined && rol !== "docente_investigador") {
+      throw domainError(
+        `El flag esGerente solo puede activarse junto al rol docente_investigador. Rol indicado: "${rol}"`,
+        400
+      );
+    }
 
     // Validar rol usando el value object — lanza error si no es válido
     if (rol) {
